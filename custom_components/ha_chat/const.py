@@ -1,7 +1,7 @@
 """Konstanten für HA Chat."""
 
 DOMAIN = "ha_chat"
-VERSION = "1.9.0"
+VERSION = "1.9.1"
 
 CONF_USERS = "users"
 CONF_RETENTION_DAYS = "retention_days"

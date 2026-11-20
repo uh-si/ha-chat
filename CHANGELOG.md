@@ -1,5 +1,10 @@
 # Changelog / Änderungsprotokoll
 
+## 1.9.1 – 20.11.2026
+
+### Behoben
+- Prüfung durch Home Assistant (hassfest): Die Beschreibung des Dienst-Felds „buttons“ enthielt ein Beispiel mit geschweiften Klammern, die Home Assistant als Platzhalter liest. Text umformuliert (Deutsch und Englisch); an der Funktion ändert sich nichts.
+
 ## 1.9.0 – 20.11.2026
 
 ### Neu

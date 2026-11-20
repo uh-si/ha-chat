@@ -64,7 +64,7 @@
         },
         "buttons": {
           "name": "Answer buttons",
-          "description": "List of buttons, e.g. [\"Yes\", \"No\"] or [{\"title\": \"Done\", \"action\": \"done\", \"confirm\": \"Sure?\"}]. \"confirm\" asks before the press counts. A press fires the \"ha_chat_button\" event."
+          "description": "List of buttons, e.g. [\"Yes\", \"No\"], or entries with title, action and confirm (asks e.g. \"Sure?\" before the press counts). A press fires the \"ha_chat_button\" event."
         },
         "important": {
           "name": "Highest priority",

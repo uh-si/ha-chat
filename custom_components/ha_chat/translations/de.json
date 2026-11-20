@@ -64,7 +64,7 @@
         },
         "buttons": {
           "name": "Antwortknöpfe",
-          "description": "Liste von Knöpfen, z. B. [\"Ja\", \"Nein\"] oder [{\"title\": \"Erledigt\", \"action\": \"erledigt\", \"confirm\": \"Sicher?\"}]. „confirm“ fragt vor dem Auslösen nach. Die Auswahl löst das Ereignis „ha_chat_button“ aus."
+          "description": "Liste von Knöpfen, z. B. [\"Ja\", \"Nein\"] oder Einträge mit title, action und confirm (Rückfrage, z. B. \"Sicher?\"). Die Auswahl löst das Ereignis „ha_chat_button“ aus."
         },
         "important": {
           "name": "Höchste Priorität",

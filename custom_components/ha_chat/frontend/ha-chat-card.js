@@ -3,7 +3,7 @@
  * custom:ha-chat-compact-card  Kompakte Kachel mit ungelesenen Nachrichten und Schnellantwort
  */
 (() => {
-  const VERSION = "1.9.0";
+  const VERSION = "1.9.1";
   const SYSTEM = "__system__";
   if (customElements.get("ha-chat-card")) return;
 
