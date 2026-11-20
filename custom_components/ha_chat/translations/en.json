@@ -1,0 +1,76 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up HA Chat",
+        "description": "Select the users who may use the chat.",
+        "data": {
+          "users": "Allowed users",
+          "retention_days": "Keep messages (days)",
+          "push_enabled": "Push notifications via the Companion app",
+          "dashboard_path": "Dashboard path of the chat card (fallback only – the card reports its dashboard automatically)",
+          "fire_events": "Fire \"ha_chat_message\" event for automations (message text is visible to administrators in automations)"
+        }
+      }
+    },
+    "error": {
+      "no_users": "Please select at least one user."
+    },
+    "abort": {
+      "single_instance_allowed": "HA Chat is already set up."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "HA Chat options",
+        "data": {
+          "users": "Allowed users",
+          "retention_days": "Keep messages (days)",
+          "push_enabled": "Push notifications via the Companion app",
+          "dashboard_path": "Dashboard path of the chat card (fallback only – the card reports its dashboard automatically)",
+          "fire_events": "Fire \"ha_chat_message\" event for automations (message text is visible to administrators in automations)"
+        }
+      }
+    },
+    "error": {
+      "no_users": "Please select at least one user."
+    }
+  },
+  "services": {
+    "send_message": {
+      "name": "Send chat message",
+      "description": "Sends a message as \"Home\" to a conversation (default: channel \"Home\").",
+      "fields": {
+        "message": {
+          "name": "Message",
+          "description": "Message text."
+        },
+        "conversation": {
+          "name": "Conversation",
+          "description": "Name or ID. Empty = channel Home."
+        },
+        "user": {
+          "name": "User",
+          "description": "Instead of a conversation: display name (first name is enough), user ID or person (person.xyz). The message goes to this user's personal channel \"Home – Messages\", which only they can see."
+        },
+        "title": {
+          "name": "Push title",
+          "description": "Optional title."
+        },
+        "file": {
+          "name": "File",
+          "description": "Path to a file (must be allowed in allowlist_external_dirs)."
+        },
+        "buttons": {
+          "name": "Answer buttons",
+          "description": "List of buttons, e.g. [\"Yes\", \"No\"] or [{\"title\": \"Done\", \"action\": \"done\", \"confirm\": \"Sure?\"}]. \"confirm\" asks before the press counts. A press fires the \"ha_chat_button\" event."
+        },
+        "important": {
+          "name": "Highest priority",
+          "description": "Breaks through Focus/Do Not Disturb on iPhone (time-sensitive) and uses the Android channel \"Chat – Wichtig\". Marked as important in the chat."
+        }
+      }
+    }
+  }
+}

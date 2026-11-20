@@ -1,0 +1,38 @@
+send_message:
+  fields:
+    message:
+      required: false
+      example: "Die Waschmaschine ist fertig."
+      selector:
+        text:
+          multiline: true
+    conversation:
+      required: false
+      example: "Familie"
+      selector:
+        text:
+    user:
+      required: false
+      example: "Markus"
+      selector:
+        text:
+    title:
+      required: false
+      example: "Waschküche"
+      selector:
+        text:
+    file:
+      required: false
+      example: "/config/www/bild.jpg"
+      selector:
+        text:
+    buttons:
+      required: false
+      example: '[{"title": "Erledigt", "action": "erledigt", "confirm": "Sicher?"}]'
+      selector:
+        object:
+    important:
+      required: false
+      default: false
+      selector:
+        boolean:

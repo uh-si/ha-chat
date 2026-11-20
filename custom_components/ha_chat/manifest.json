@@ -1,0 +1,28 @@
+{
+  "domain": "ha_chat",
+  "name": "HA Chat",
+  "after_dependencies": [
+    "mobile_app",
+    "notify",
+    "person"
+  ],
+  "categories": [
+    "messaging_notifications.chat_apps"
+  ],
+  "codeowners": [
+    "@uh-si"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http",
+    "websocket_api"
+  ],
+  "documentation": "https://github.com/uh-si/ha-chat#readme",
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/uh-si/ha-chat/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "1.9.0"
+}

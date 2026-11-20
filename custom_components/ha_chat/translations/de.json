@@ -1,0 +1,76 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HA Chat einrichten",
+        "description": "Wähle die Benutzer aus, die den Chat verwenden dürfen.",
+        "data": {
+          "users": "Berechtigte Benutzer",
+          "retention_days": "Nachrichten aufbewahren (Tage)",
+          "push_enabled": "Push-Benachrichtigungen über die Companion App",
+          "dashboard_path": "Dashboard-Pfad der Chat-Karte (nur Rückfallwert – die Karte meldet ihr Dashboard automatisch)",
+          "fire_events": "Ereignis „ha_chat_message“ für Automationen auslösen (Nachrichtentext ist für Administratoren in Automationen sichtbar)"
+        }
+      }
+    },
+    "error": {
+      "no_users": "Bitte mindestens einen Benutzer auswählen."
+    },
+    "abort": {
+      "single_instance_allowed": "HA Chat ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "HA Chat Optionen",
+        "data": {
+          "users": "Berechtigte Benutzer",
+          "retention_days": "Nachrichten aufbewahren (Tage)",
+          "push_enabled": "Push-Benachrichtigungen über die Companion App",
+          "dashboard_path": "Dashboard-Pfad der Chat-Karte (nur Rückfallwert – die Karte meldet ihr Dashboard automatisch)",
+          "fire_events": "Ereignis „ha_chat_message“ für Automationen auslösen (Nachrichtentext ist für Administratoren in Automationen sichtbar)"
+        }
+      }
+    },
+    "error": {
+      "no_users": "Bitte mindestens einen Benutzer auswählen."
+    }
+  },
+  "services": {
+    "send_message": {
+      "name": "Chat-Nachricht senden",
+      "description": "Sendet eine Nachricht als „Home“ in eine Unterhaltung (Standard: Kanal „Home“).",
+      "fields": {
+        "message": {
+          "name": "Nachricht",
+          "description": "Text der Nachricht."
+        },
+        "conversation": {
+          "name": "Unterhaltung",
+          "description": "Name oder ID der Unterhaltung. Leer = Kanal „Home“."
+        },
+        "user": {
+          "name": "Benutzer",
+          "description": "Statt einer Unterhaltung: Anzeigename (auch nur Vorname), Benutzer-ID oder Person (person.xyz). Die Nachricht landet im persönlichen Kanal „Home – Messages“ dieses Benutzers, den nur er sieht."
+        },
+        "title": {
+          "name": "Titel der Push-Benachrichtigung",
+          "description": "Optionaler Titel."
+        },
+        "file": {
+          "name": "Datei",
+          "description": "Pfad zu einer Datei unter /config (muss in allowlist_external_dirs erlaubt sein)."
+        },
+        "buttons": {
+          "name": "Antwortknöpfe",
+          "description": "Liste von Knöpfen, z. B. [\"Ja\", \"Nein\"] oder [{\"title\": \"Erledigt\", \"action\": \"erledigt\", \"confirm\": \"Sicher?\"}]. „confirm“ fragt vor dem Auslösen nach. Die Auswahl löst das Ereignis „ha_chat_button“ aus."
+        },
+        "important": {
+          "name": "Höchste Priorität",
+          "description": "Kommt auf dem iPhone durch Fokus/„Nicht stören“ (zeitkritisch) und nutzt auf Android den Kanal „Chat – Wichtig“. Wird im Chat als wichtig markiert."
+        }
+      }
+    }
+  }
+}
