@@ -15,6 +15,7 @@ from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.event import async_track_time_interval
 
+from . import i18n
 from .const import (
     CARD_URL,
     DB_FILE,
@@ -72,18 +73,22 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
     async def handle_send(call: ServiceCall) -> ServiceResponse:
         manager: ChatManager | None = hass.data[DOMAIN].get("manager")
+        # Dienste laufen aus Automationen: Fehlermeldungen in der Sprache der Instanz
+        lang = hass.config.language
         if manager is None:
-            raise ServiceValidationError("HA Chat ist nicht eingerichtet")
+            raise ServiceValidationError(i18n.error("HA Chat ist nicht eingerichtet", lang))
         target = call.data.get("conversation")
         user = call.data.get("user")
         conv_id = None
         if user and target:
-            raise ServiceValidationError("Bitte entweder „conversation“ oder „user“ angeben, nicht beides")
+            raise ServiceValidationError(
+                i18n.error("Bitte entweder „conversation“ oder „user“ angeben, nicht beides", lang)
+            )
         if user:
             try:
                 conv_id = await manager.async_personal_home(manager.resolve_user(user))
             except ChatError as err:
-                raise ServiceValidationError(err.message) from err
+                raise ServiceValidationError(i18n.error(err.message, lang)) from err
         elif not target:
             conv_id = await hass.async_add_executor_job(manager.store.find_system)
         elif target.isdigit():
@@ -91,7 +96,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         else:
             conv_id = await hass.async_add_executor_job(manager.store.find_by_name, target)
         if conv_id is None:
-            raise ServiceValidationError(f"Unterhaltung '{target}' nicht gefunden")
+            raise ServiceValidationError(i18n.error(f"Unterhaltung '{target}' nicht gefunden", lang))
         try:
             attachment_id = None
             if call.data.get("file"):
@@ -107,7 +112,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
                 important=call.data.get("important", False),
             )
         except ChatError as err:
-            raise ServiceValidationError(err.message) from err
+            raise ServiceValidationError(i18n.error(err.message, lang)) from err
         return {"message_id": msg_id, "conversation_id": conv_id}
 
     hass.services.async_register(

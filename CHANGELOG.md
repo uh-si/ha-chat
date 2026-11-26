@@ -1,5 +1,18 @@
 # Changelog / Änderungsprotokoll
 
+## 2.0.0 – 26.11.2026
+
+### Neu: Mehrsprachig (Deutsch und Englisch)
+- Chat-Karte und kompakte Kachel gibt es jetzt auf Deutsch und Englisch – ein Wunsch aus der Community. Ohne weitere Einstellung zeigt sich die Karte in der Sprache, die jeder Benutzer in seinem Home-Assistant-Profil gewählt hat; andere Sprachen erscheinen auf Englisch. Wechselt jemand die Sprache, passt sich die Karte ohne Neuladen an.
+- Neue Kartenoption „language“ (de oder en) für eine feste Sprache, z. B. auf einem Wandtablet.
+- Visueller Karten-Editor: Sprache, Höhe und „bildschirmfüllend“ bzw. Titel, Anzahl der Nachrichten und Dashboard lassen sich ohne YAML einstellen.
+- Datum und Uhrzeit („Heute“, Wochentage, „zuletzt online …“) im Format der jeweiligen Sprache.
+- Push-Mitteilungen in der Sprache des Empfängers: Titel, „(3 neue)“, „Standort“, „Foto“ und die Knöpfe „Antworten“/„Als gelesen markieren“. Die Karte meldet die Sprache dafür dem Server.
+- Fehlermeldungen in der Sprache des Benutzers; Fehler aus Automationen (Dienst ha_chat.send_message) in der Sprache der Home-Assistant-Instanz.
+
+### Unverändert
+- Die Namen der Kanäle „Home“ und „Home – Messages“ bleiben. Nachrichten selbst werden nicht übersetzt. Bei euch ändert sich nichts, solange das Home-Assistant-Profil auf Deutsch steht.
+
 ## 1.9.1 – 20.11.2026
 
 ### Behoben

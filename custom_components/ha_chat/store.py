@@ -131,7 +131,7 @@ class ChatStore:
             if name not in cols:
                 self._db.execute(f"ALTER TABLE conversations ADD COLUMN {name} {ddl}")
         cols = {r[1] for r in self._db.execute("PRAGMA table_info(user_settings)").fetchall()}
-        for name in ("card_path", "compact_path"):
+        for name in ("card_path", "compact_path", "language"):
             if name not in cols:
                 self._db.execute(f"ALTER TABLE user_settings ADD COLUMN {name} TEXT")
         cols = {r[1] for r in self._db.execute("PRAGMA table_info(members)").fetchall()}
@@ -608,6 +608,7 @@ class ChatStore:
             r["user_id"]: {
                 "show_presence": bool(r["show_presence"]), "last_seen": r["last_seen"],
                 "card_path": r["card_path"], "compact_path": r["compact_path"],
+                "language": r["language"],
             }
             for r in self._q("SELECT * FROM user_settings")
         }
@@ -619,6 +620,14 @@ class ChatStore:
             f"INSERT INTO user_settings (user_id, {col}) VALUES (?,?)"
             f" ON CONFLICT(user_id) DO UPDATE SET {col}=excluded.{col}",
             (user_id, path),
+        )
+
+    def set_language(self, user_id: str, language: str) -> None:
+        """Sprache des Benutzers (für Push-Mitteilungen und Fehlermeldungen)."""
+        self._x(
+            "INSERT INTO user_settings (user_id, language) VALUES (?,?)"
+            " ON CONFLICT(user_id) DO UPDATE SET language=excluded.language",
+            (user_id, language),
         )
 
     def set_show_presence(self, user_id: str, show: bool) -> None:

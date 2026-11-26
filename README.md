@@ -4,7 +4,7 @@
 
 **[➜ Open in your Home Assistant Marketplace](https://my.home-assistant.io/redirect/marketplace_repository/?owner=uh-si&repository=ha-chat&category=integration)**
 
-![HA Chat on the PC and on the phone](https://raw.githubusercontent.com/uh-si/ha-chat/main/images/overview.png)
+![HA Chat on the PC and on the phone](https://raw.githubusercontent.com/uh-si/ha-chat/main/images/overview-en.png)
 
 *Deutsche Beschreibung weiter unten.*
 
@@ -19,6 +19,7 @@
 - **"Delete for me", clear history** and automatic clean-up after a configurable number of days.
 - **Storage overview for administrators** (database, media, devices and push reachability).
 - **Made for the phone:** the chat fills the screen, respects the notch and home indicator, no zooming into input fields on iOS.
+- **English and German** – each user sees the card in the language of their Home Assistant profile (other languages fall back to English); push notifications follow it too.
 - **Light and dark mode** – follows your Home Assistant theme and accent colour.
 - **Compact tile** with unread count, the latest messages and a quick reply.
 
@@ -34,7 +35,7 @@ Requires Home Assistant 2026.3 or newer. On Home Assistant 2026.11 and newer the
 2. Go to **Settings → Devices & services → Add integration**, choose **HA Chat** and select the users who may use the chat.
 3. Edit a dashboard, select **Add card** and search for **HA Chat** (full chat) or **HA Chat – Kompakt** (tile). The card loads itself – no dashboard resource needed.
 
-Users, message retention, push notifications and events can be changed later under **Settings → Devices & services → HA Chat → Configure**.
+Both cards can be configured in the visual card editor. Users, message retention, push notifications and events can be changed later under **Settings → Devices & services → HA Chat → Configure**.
 
 For push notifications each user needs the Home Assistant Companion app on their phone, logged in with their own Home Assistant user.
 
@@ -46,6 +47,7 @@ A detailed user guide (German) is in [`docs/Anleitung-HA-Chat.pdf`](docs/Anleitu
 type: custom:ha-chat-card
 height: 600px        # height on PC/tablet; on phones the chat fills the screen
 fit_screen: true     # false = keep "height" on phones too
+language: en         # optional: en or de – default is the language of the user's profile
 ```
 
 ```yaml
@@ -53,7 +55,14 @@ type: custom:ha-chat-compact-card
 title: Chat
 messages: 3                     # number of latest messages shown
 navigation_path: /ha-chat/chat  # open this dashboard instead of a pop-up
+language: en                    # optional, as above
 ```
+
+### Languages
+
+The cards are available in **English** and **German**. By default each user sees them in the language set in their Home Assistant profile; any language other than German is shown in English. Use `language: en` or `language: de` to fix the language, e.g. on a shared wall tablet. Push notifications and error messages follow each user's language; errors from automations use the language of your Home Assistant instance. Messages themselves are not translated.
+
+Want HA Chat in your language? Translations are welcome – see the `EN` table at the top of `custom_components/ha_chat/frontend/ha-chat-card.js` and `i18n.py`, and open a pull request.
 
 ## Automations
 
@@ -106,6 +115,7 @@ This is a community project. It is not made, tested or supported by the Home Ass
 - **„Für mich löschen“, Verlauf leeren** und automatisches Aufräumen nach einstellbarer Zeit.
 - **Speicher-Übersicht für Administratoren** (Datenbank, Medien, Geräte, Push-Erreichbarkeit).
 - **Fürs Handy gemacht:** Der Chat füllt den Bildschirm und berücksichtigt Notch und Wischleiste.
+- **Deutsch und Englisch** – jeder sieht die Karte in der Sprache seines Home-Assistant-Profils, fest einstellbar mit `language: de` oder `language: en`.
 - **Hell- und Dunkelmodus** passend zum Home-Assistant-Design, dazu eine **kompakte Kachel**.
 
 ### Installation

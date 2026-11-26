@@ -8,6 +8,7 @@ from aiohttp import web
 
 from homeassistant.components.http import HomeAssistantView
 
+from . import i18n
 from .const import DOMAIN, MAX_UPLOAD_BYTES
 
 # Nur diese Typen werden im Browser direkt angezeigt; alles andere (z. B. SVG, HTML, PDF)
@@ -50,7 +51,8 @@ class ChatUploadView(_BaseView):
         manager = self._manager()
         user = _user(request)
         if manager is None or user is None or not manager.is_allowed(user.id):
-            return self.json_message("Kein Zugriff", 403)
+            return self.json_message(i18n.error("Kein Zugriff", hass.config.language), 403)
+        lang = manager.lang(user.id)
 
         reader = await request.multipart()
         conv_id: int | None = None
@@ -63,12 +65,12 @@ class ChatUploadView(_BaseView):
                 try:
                     conv_id = int(await part.text())
                 except ValueError:
-                    return self.json_message("Ungültige Unterhaltung", 400)
+                    return self.json_message(i18n.error("Ungültige Unterhaltung", lang), 400)
                 if conv_id <= 0 or not await hass.async_add_executor_job(manager.store.is_member, conv_id, user.id):
-                    return self.json_message("Kein Mitglied", 403)
+                    return self.json_message(i18n.error("Kein Mitglied", lang), 403)
             elif part.name == "file":
                 if conv_id is None:
-                    return self.json_message("conversation_id muss vor der Datei kommen", 400)
+                    return self.json_message(i18n.error("conversation_id muss vor der Datei kommen", lang), 400)
                 filename = part.filename or "datei"
                 att_id, path = manager.new_attachment_path(filename)
                 size = 0
@@ -82,7 +84,7 @@ class ChatUploadView(_BaseView):
                         if size > MAX_UPLOAD_BYTES:
                             await hass.async_add_executor_job(fh.close)
                             await hass.async_add_executor_job(os.remove, path)
-                            return self.json_message("Datei zu groß (max. 100 MB)", 413)
+                            return self.json_message(i18n.error("Datei zu groß (max. 100 MB)", lang), 413)
                         await hass.async_add_executor_job(fh.write, chunk)
                 finally:
                     if not fh.closed:
@@ -92,7 +94,7 @@ class ChatUploadView(_BaseView):
                     (part.headers.get("Content-Type") or "").split(";")[0].strip().lower() or None, size, path,
                 )
         if result is None:
-            return self.json_message("Keine Datei erhalten", 400)
+            return self.json_message(i18n.error("Keine Datei erhalten", lang), 400)
         return self.json(result)
 
 

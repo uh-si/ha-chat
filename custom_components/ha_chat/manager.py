@@ -43,6 +43,7 @@ from .const import (
     SYSTEM_SENDER,
     SYSTEM_SENDER_NAME,
 )
+from . import i18n
 from .store import ChatStore
 
 _LOGGER = logging.getLogger(__name__)
@@ -704,7 +705,7 @@ class ChatManager:
                 "sender_id": msg["sender_id"],
                 "sender_name": self.user_name(msg["sender_id"]),
                 "text": msg["text"],
-                "attachment": _attachment_label(att["mime"]) if att else None,
+                "attachment": i18n.attachment_label(att["mime"], self.hass.config.language) if att else None,
                 "has_location": bool(msg.get("location")),
                 "mentions": self.mentioned(members, msg["sender_id"], msg["text"]),
                 "forwarded": bool(msg.get("forwarded")),
@@ -985,7 +986,7 @@ class ChatManager:
             service = "mobile_app_" + slugify(raw_name)
             app_data = entry.data.get("app_data") or {}
             devices.append({
-                "name": raw_name or entry.title or "Gerät",
+                "name": raw_name or entry.title or i18n.text("device", self.lang(user_id)),
                 "os": entry.data.get("os_name") or "",
                 "model": " ".join(
                     x for x in (entry.data.get("manufacturer"), entry.data.get("model")) if x
@@ -1031,6 +1032,19 @@ class ChatManager:
             self._throttle_warned.discard(service)
         cnt[1] += 1
         self._push_last[(service, conv_id)] = time.time()
+
+    def lang(self, user_id: str | None) -> str:
+        """Sprache eines Benutzers ("de"/"en"): von der Karte gemeldet, sonst die der Instanz."""
+        stored = self.settings.get(user_id or "", {}).get("language")
+        return i18n.norm(stored or self.hass.config.language)
+
+    async def async_set_language(self, user_id: str, language: str) -> str:
+        lang = i18n.norm(language)
+        current = self.settings.setdefault(user_id, {"show_presence": True})
+        if current.get("language") != lang:
+            current["language"] = lang
+            await self._run(self.store.set_language, user_id, lang)
+        return lang
 
     async def async_set_view_path(self, user_id: str, kind: str, path: str) -> bool:
         """Die Karte meldet, auf welchem Dashboard sie angezeigt wird."""
@@ -1125,18 +1139,21 @@ class ChatManager:
             view = await self.async_conversation_view(conv_id, uid, None)
             if view is None:
                 continue
+            lang = self.lang(uid)
             body = msg["text"] or ""
+            if sender == SYSTEM_SENDER and body:
+                body = i18n.system_text(body, lang)
             if msg.get("location") and not body:
-                body = "📍 Standort"
+                body = i18n.text("location", lang)
             att = msg.get("attachment")
             if att:
-                kind = _attachment_label(att["mime"])
+                kind = i18n.attachment_label(att["mime"], lang)
                 body = f"{kind}: {body}" if body else kind
             count = await self._run(self.store.unread_count, conv_id, uid)
             if title:
                 head = title
             elif uid in mentions:
-                head = f"{self.user_name(sender)} hat dich erwähnt"
+                head = i18n.text("mentioned", lang, name=self.user_name(sender))
                 if view["is_group"]:
                     head += f" · {view['name']}"
             elif view["is_group"]:
@@ -1145,7 +1162,7 @@ class ChatManager:
                 head = self.user_name(sender)
             important = bool(msg.get("important"))
             if count > 1 and not title and not important:
-                head += f" ({count} neue)"
+                head += " " + i18n.text("new_count", lang, n=count)
             if important:
                 head = f"❗ {head}"
             data = self._push_data(f"ha_chat_{conv_id}", self._dashboard_link(conv_id, uid), important)
@@ -1153,12 +1170,12 @@ class ChatManager:
                 "actions": [
                     {
                         "action": f"{ACTION_REPLY}{conv_id}",
-                        "title": "Antworten",
+                        "title": i18n.text("reply", lang),
                         "behavior": "textInput",
-                        "textInputButtonTitle": "Senden",
-                        "textInputPlaceholder": "Nachricht",
+                        "textInputButtonTitle": i18n.text("send", lang),
+                        "textInputPlaceholder": i18n.text("message", lang),
                     },
-                    {"action": f"{ACTION_READ}{conv_id}", "title": "Als gelesen markieren"},
+                    {"action": f"{ACTION_READ}{conv_id}", "title": i18n.text("mark_read", lang)},
                 ],
             })
             if msg.get("buttons") and not msg.get("answer"):
@@ -1205,7 +1222,7 @@ class ChatManager:
                     "notify", service,
                     {
                         "title": "HA Chat – Test",
-                        "message": "✅ Angekommen! Tippe hier – dann sollte sich der Chat öffnen.",
+                        "message": i18n.text("test_message", self.lang(user_id)),
                         "data": data,
                     },
                     blocking=False,
@@ -1394,14 +1411,6 @@ def _image_ext(data: bytes) -> str:
     raise ChatError("invalid", "Nur JPEG- oder PNG-Bilder sind erlaubt")
 
 
-def _attachment_label(mime: str) -> str:
-    if mime.startswith("image/"):
-        return "Foto"
-    if mime.startswith("video/"):
-        return "Video"
-    if mime.startswith("audio/"):
-        return "Audiodatei"
-    return "Datei"
 
 
 def _write_file(path: str, data: bytes) -> None:

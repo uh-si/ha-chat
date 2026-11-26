@@ -13,6 +13,7 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 
 from .const import DOMAIN, MAX_DESCRIPTION, REACTIONS, VERSION
+from . import i18n
 from .manager import ChatError, ChatManager
 
 
@@ -27,15 +28,18 @@ def _guarded(func):
     async def wrapper(hass: HomeAssistant, connection, msg: dict[str, Any]) -> None:
         manager = _manager(hass)
         if manager is None:
-            connection.send_error(msg["id"], "not_loaded", "HA Chat ist nicht eingerichtet")
+            connection.send_error(
+                msg["id"], "not_loaded", i18n.error("HA Chat ist nicht eingerichtet", hass.config.language)
+            )
             return
+        lang = manager.lang(connection.user.id)
         if not manager.is_allowed(connection.user.id):
-            connection.send_error(msg["id"], "not_allowed", "Kein Zugriff auf den Chat")
+            connection.send_error(msg["id"], "not_allowed", i18n.error("Kein Zugriff auf den Chat", lang))
             return
         try:
             await func(hass, connection, msg, manager)
         except ChatError as err:
-            connection.send_error(msg["id"], err.code, err.message)
+            connection.send_error(msg["id"], err.code, i18n.error(err.message, lang))
 
     return wrapper
 
@@ -46,7 +50,9 @@ def _admin_only(func):
     @wraps(func)
     async def wrapper(hass: HomeAssistant, connection, msg: dict[str, Any], manager) -> None:
         if not connection.user.is_admin:
-            connection.send_error(msg["id"], "unauthorized", "Nur für Administratoren")
+            connection.send_error(
+                msg["id"], "unauthorized", i18n.error("Nur für Administratoren", manager.lang(connection.user.id))
+            )
             return
         await func(hass, connection, msg, manager)
 
@@ -72,6 +78,7 @@ def async_register(hass: HomeAssistant) -> None:
         ws_set_group_avatar, ws_remove_group_avatar, ws_hide, ws_clear_history,
         ws_set_presence, ws_storage, ws_storage_action, ws_devices, ws_test_push,
         ws_view_path,
+        ws_set_language,
     ):
         websocket_api.async_register_command(hass, handler)
 
@@ -293,7 +300,7 @@ async def ws_set_avatar(hass, connection, msg, manager):
     """Eigenes Profilbild setzen (Base64, von der Karte auf 256x256 JPEG verkleinert)."""
     data = _decode_image(msg["image"])
     if data is None:
-        connection.send_error(msg["id"], "invalid", "Ungültige Bilddaten")
+        connection.send_error(msg["id"], "invalid", i18n.error("Ungültige Bilddaten", manager.lang(connection.user.id)))
         return
     await manager.async_set_avatar(connection.user.id, data)
     connection.send_result(msg["id"])
@@ -378,7 +385,7 @@ async def ws_locate(hass, connection, msg, manager):
 async def ws_set_group_avatar(hass, connection, msg, manager):
     data = _decode_image(msg["image"])
     if data is None:
-        connection.send_error(msg["id"], "invalid", "Ungültige Bilddaten")
+        connection.send_error(msg["id"], "invalid", i18n.error("Ungültige Bilddaten", manager.lang(connection.user.id)))
         return
     await manager.async_set_group_avatar(connection.user.id, msg["conversation_id"], data)
     connection.send_result(msg["id"])
@@ -471,6 +478,18 @@ async def ws_devices(hass, connection, msg, manager):
 async def ws_test_push(hass, connection, msg, manager):
     """Test-Push an die eigenen Geräte (nach kurzer Verzögerung)."""
     connection.send_result(msg["id"], await manager.async_test_push(connection.user.id))
+
+
+@websocket_api.websocket_command({
+    vol.Required("type"): "ha_chat/set_language",
+    vol.Required("language"): vol.All(str, vol.Length(max=20)),
+})
+@websocket_api.async_response
+@_guarded
+async def ws_set_language(hass, connection, msg, manager):
+    """Die Karte meldet die Sprache des Benutzers (für Push-Mitteilungen und Fehlermeldungen)."""
+    lang = await manager.async_set_language(connection.user.id, msg["language"])
+    connection.send_result(msg["id"], {"language": lang})
 
 
 @websocket_api.websocket_command({

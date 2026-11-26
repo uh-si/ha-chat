@@ -3,9 +3,357 @@
  * custom:ha-chat-compact-card  Kompakte Kachel mit ungelesenen Nachrichten und Schnellantwort
  */
 (() => {
-  const VERSION = "1.9.1";
+  const VERSION = "2.0.0";
   const SYSTEM = "__system__";
   if (customElements.get("ha-chat-card")) return;
+
+  // ------------------------------------------------------------ Sprache (Deutsch / Englisch)
+  // Alle Texte stehen hier auf Deutsch; EN enthält die englische Übersetzung. Welche Sprache gilt:
+  // Kartenoption „language“ (de/en), sonst die Sprache aus dem Home-Assistant-Profil des Benutzers
+  // (Deutsch → Deutsch, alle anderen → Englisch). Weitere Sprachen: neue Tabelle wie EN anlegen.
+  const EN = {
+    "Dateien hier ablegen": "Drop files here",
+    "Ich": "Me",
+    " und ": " and ",
+    "1 Anhang": "1 attachment",
+    "1 Datei": "1 file",
+    "1 Nachricht": "1 message",
+    "1 verwaiste Datei": "1 orphaned file",
+    "<b>In {s} Sekunden</b> kommt eine Test-Benachrichtigung auf dein Gerät.": "<b>In {s} seconds</b> a test notification will arrive on your device.",
+    "<b>In {s} Sekunden</b> kommt eine Test-Benachrichtigung auf {n} Geräte.": "<b>In {s} seconds</b> a test notification will arrive on {n} devices.",
+    "<b>Kein Standort verfügbar.</b> Bitte prüfen:<br>• Ist auf dem Handy die Standortermittlung (GPS) eingeschaltet?<br>• Darf die Companion App den Standort verwenden – auch im Hintergrund? (In der App: Einstellungen → Companion App → Sensoren bzw. Standort)<br>• Ist dein Home-Assistant-Benutzer einer Person mit diesem Handy zugeordnet? (Einstellungen → Personen)": "<b>No location available.</b> Please check:<br>• Is location (GPS) turned on on the phone?<br>• May the Companion app use your location – also in the background? (In the app: Settings → Companion app → Sensors or Location)<br>• Is your Home Assistant user assigned to a person with this phone? (Settings → People)",
+    "Abbrechen": "Cancel",
+    "Abfrage fehlgeschlagen": "Request failed",
+    "Achtung: Ein aktueller Standort war nicht verfügbar. Das ist der <b>letzte bekannte Standort von vor {age}</b>.": "Note: a current location was not available. This is the <b>last known location from {age} ago</b>.",
+    "Akku: „Nicht eingeschränkt“ bzw. Akku-Optimierung für Home Assistant ausschalten.": "Battery: set to “Unrestricted” or turn off battery optimisation for Home Assistant.",
+    "Alle": "All",
+    "Alle Bilder, Videos und Dateien in „{name}“ löschen?": "Delete all photos, videos and files in “{name}”?",
+    "Alle Nachrichten in „{name}“ löschen?": "Delete all messages in “{name}”?",
+    "Alle Nachrichten löschen, die älter als {n} Tage sind?": "Delete all messages older than {n} days?",
+    "Alle bisherigen Nachrichten verschwinden nur bei dir. Die anderen sehen sie weiterhin, neue Nachrichten kommen ganz normal an.": "All previous messages disappear for you only. The others still see them, and new messages arrive as usual.",
+    "Alter in Tagen": "Age in days",
+    "An {n} Chats weitergeleitet": "Forwarded to {n} chats",
+    "Andere sehen, ob du gerade online bist und wann du zuletzt online warst. Schaltest du das aus, siehst du auch den Status der anderen nicht.": "Others can see whether you are online and when you were last online. If you turn this off, you won't see the status of others either.",
+    "Anhang": "Attachment",
+    "Anhängen": "Attach",
+    "Anhängen: Kamera, Fotos, Datei oder Standort": "Attach: camera, photos, file or location",
+    "Antwort": "Answer",
+    "Antwort an {name} …": "Reply to {name} …",
+    "Antworten": "Reply",
+    "Anzahl angezeigter Nachrichten": "Number of messages shown",
+    "App nicht erreichbar": "app not reachable",
+    "Audiodatei": "Audio file",
+    "Auf dem Handy bildschirmfüllend": "Fill the screen on phones",
+    "Automatisch (Sprache des Benutzerprofils)": "Automatic (language of the user profile)",
+    "Bearbeiten": "Edit",
+    "Benachrichtigungsdienst fehlt (Home Assistant neu starten)": "notification service missing (restart Home Assistant)",
+    "Beschreibung bearbeiten": "Edit description",
+    "Beschreibung entfernt": "Description removed",
+    "Beschreibung gespeichert": "Description saved",
+    "Beschreibung hinzufügen": "Add description",
+    "Bild": "Image",
+    "Bilder, Videos & Dateien": "Photos, videos & files",
+    "Bitte Gruppennamen eingeben": "Please enter a group name",
+    "Bitte warten, das kann bis zu 25 Sekunden dauern …": "Please wait, this can take up to 25 seconds …",
+    "Chat": "Chat",
+    "Chat für beide löschen": "Delete chat for both",
+    "Chat löschen": "Delete chat",
+    "Chat schließen": "Close chat",
+    "Chat starten": "Start chat",
+    "Chat und alle Nachrichten löschen?": "Delete the chat and all messages?",
+    "Chat {name} öffnen": "Open chat {name}",
+    "Chat „{name}“ komplett löschen?": "Delete chat “{name}” completely?",
+    "Chats durchsuchen": "Search chats",
+    "Dashboard zum Öffnen (statt Fenster)": "Dashboard to open (instead of a pop-up)",
+    "Datei": "File",
+    "Dateien": "Files",
+    "Dein Benutzer ist keiner Person zugeordnet": "your user is not assigned to a person",
+    "Dein persönlicher Kanal: Hier schickt Home Assistant Meldungen aus Automationen, die nur für dich bestimmt sind. Niemand sonst sieht diesen Chat.": "Your personal channel: Home Assistant sends messages from automations here that are meant only for you. Nobody else sees this chat.",
+    "Deine Geräte können zurzeit keine Push empfangen. Öffne die Companion App einmal, erlaube Benachrichtigungen und starte Home Assistant ggf. neu.": "Your devices can't receive push notifications right now. Open the Companion app once, allow notifications and restart Home Assistant if needed.",
+    "Der Chat wird für euch beide gelöscht.": "The chat will be deleted for both of you.",
+    "Der Name ist dein Anzeigename aus deinem Home-Assistant-Profil (unten links auf deinen Namen tippen).": "The name is the display name from your Home Assistant profile (tap your name at the bottom left).",
+    "Der Standort ist ungenau (±{acc} m).": "The location is inaccurate (±{acc} m).",
+    "Die App darf im Hintergrund bleiben; Wegwischen schadet nicht – die Push kommt von Apple.": "The app may stay in the background; swiping it away does no harm – the push comes from Apple.",
+    "Die App nie mit „Beenden erzwingen“ stoppen – danach kommen keine Pushs, bis sie wieder geöffnet wurde.": "Never stop the app with “Force stop” – after that no pushes arrive until it is opened again.",
+    "Die Integration „HA Chat“ ist noch nicht eingerichtet (Einstellungen → Geräte & Dienste).": "The “HA Chat” integration is not set up yet (Settings → Devices & services).",
+    "Die Nachricht verschwindet nur bei dir. Alle anderen sehen sie weiterhin.": "The message disappears for you only. Everyone else still sees it.",
+    "Die kostenlose Push-Zustellung von Home Assistant erlaubt 500 Benachrichtigungen pro Gerät und Tag – für alle Automationen zusammen. Kurz hintereinander geschriebene Nachrichten fasst HA Chat zu einer Push zusammen. Ab 350 Chat-Pushs an einem Tag wird gedrosselt (höchstens eine je Chat alle 10 Minuten, Nachrichten mit höchster Priorität ausgenommen), damit z. B. Alarm-Meldungen nicht ausfallen.": "Home Assistant's free push delivery allows 500 notifications per device and day – for all automations together. HA Chat combines messages written in quick succession into one push. From 350 chat pushes a day it throttles (at most one per chat every 10 minutes, highest-priority messages excepted) so that e.g. alarm notifications don't get lost.",
+    "Dienst fehlt – Home Assistant neu starten": "service missing – restart Home Assistant",
+    "Diese Dateien gehören zu keiner Nachricht mehr (z. B. abgebrochene Uploads).": "These files no longer belong to any message (e.g. cancelled uploads).",
+    "Diese Nachricht wurde gelöscht": "This message was deleted",
+    "Dieses Bildformat kann hier nicht gelesen werden. Bitte ein JPEG- oder PNG-Bild wählen.": "This image format can't be read here. Please choose a JPEG or PNG image.",
+    "Direktchat": "Direct chat",
+    "Direktnachricht": "Direct message",
+    "Dort „Zeitkritische Mitteilungen“ erlauben – nötig, damit Nachrichten mit <b>höchster Priorität</b> auch im Fokus- bzw. „Nicht stören“-Modus durchkommen.": "Allow “Time Sensitive Notifications” there – needed so that messages with <b>highest priority</b> also get through in Focus / Do Not Disturb mode.",
+    "Du": "You",
+    "Du bist für den Chat nicht freigeschaltet.": "You don't have access to the chat.",
+    "Du bist für den Chat nicht freigeschaltet. Ein Administrator kann dich unter Einstellungen → Geräte & Dienste → HA Chat → Konfigurieren hinzufügen.": "You don't have access to the chat. An administrator can add you under Settings → Devices & services → HA Chat → Configure.",
+    "Ein genauerer Standort kann noch kommen …": "A more accurate location may still arrive …",
+    "Einstellungen → Apps → Home Assistant → Benachrichtigungen: erlauben; Kategorie „Chat“ auf „Ton und Pop-up“.": "Settings → Apps → Home Assistant → Notifications: allow; set the “Chat” category to “Sound and pop-up”.",
+    "Einstellungen → Mitteilungen → Home Assistant: „Mitteilungen erlauben“, Sperrbildschirm, Banner und Töne einschalten.": "Settings → Notifications → Home Assistant: turn on “Allow Notifications”, Lock Screen, Banners and Sounds.",
+    "Emoji": "Emoji",
+    "Emoji einfügen": "Insert emoji",
+    "Entfernen": "Remove",
+    "Erledigt": "Done",
+    "Erledigt – {what} entfernt": "Done – {what} removed",
+    "Erreichbarkeit": "Reachability",
+    "Erreichbarkeit testen": "Test reachability",
+    "Ersteller": "creator",
+    "Es werden die 80 neuesten Treffer angezeigt – Suchbegriff genauer fassen.": "Showing the 80 newest results – try a more specific search term.",
+    "Essen & Trinken": "Food & drink",
+    "Fokus-Modi (Einstellungen → Fokus): bei Home Assistant „Zeitkritische Mitteilungen“ zulassen. Normale Chat-Nachrichten halten sich an den Fokus.": "Focus modes (Settings → Focus): allow “Time Sensitive Notifications” for Home Assistant. Normal chat messages respect Focus.",
+    "Foto": "Photo",
+    "Foto aufnehmen": "Take photo",
+    "Fotos & Videos aus der Galerie": "Photos & videos from the gallery",
+    "Für Dringendes: kommt auch bei „Nicht stören“ an": "For urgent things: gets through Do Not Disturb",
+    "Für alle Mitglieder, mit allen Nachrichten und Dateien.": "For all members, with all messages and files.",
+    "Für alle Mitglieder, mitsamt Anhängen. Der Chat selbst bleibt bestehen.": "For all members, including attachments. The chat itself remains.",
+    "Für alle Mitglieder. Textnachrichten bleiben erhalten. Das lässt sich nicht rückgängig machen.": "For all members. Text messages are kept. This can't be undone.",
+    "Für alle löschen": "Delete for everyone",
+    "Für deinen Benutzer ist kein Smartphone mit der <b>Home Assistant Companion App</b> angemeldet. Installiere die App und melde dich mit deinem Benutzer an – dann bekommst du Chat-Nachrichten als Push.": "No phone with the <b>Home Assistant Companion app</b> is signed in for your user. Install the app and sign in with your user – then you'll get chat messages as push notifications.",
+    "Für mich löschen": "Delete for me",
+    "GPS dieses Geräts": "This device's GPS",
+    "Gelesen": "Read",
+    "Gelesen ({n})": "Read ({n})",
+    "Gelöschte Nachricht": "Deleted message",
+    "Gemeinsamer Kanal aller {n} Chat-Benutzer. Hier schreibt auch Home Assistant selbst (z. B. Meldungen aus Automationen).": "Shared channel of all {n} chat users. Home Assistant itself writes here too (e.g. messages from automations).",
+    "Gesamt": "Total",
+    "Gesendet": "Sent",
+    "Gesichter": "Faces",
+    "Gesten & Menschen": "Gestures & people",
+    "Gestern": "Yesterday",
+    "Gruppe": "Group",
+    "Gruppe für alle löschen?": "Delete the group for everyone?",
+    "Gruppe löschen": "Delete group",
+    "Gruppe umbenennen": "Rename group",
+    "Gruppe verlassen": "Leave group",
+    "Gruppe verlassen?": "Leave the group?",
+    "Gruppe · {n} Mitglieder": "Group · {n} members",
+    "Gruppenbeschreibung": "Group description",
+    "Gruppenbild entfernen": "Remove group picture",
+    "Gruppenbild festlegen": "Set group picture",
+    "Gruppenbild gespeichert": "Group picture saved",
+    "Gruppenbild ändern": "Change group picture",
+    "Gruppeninfo": "Group info",
+    "Gruppeninfo: Bild, Name & Beschreibung": "Group info: picture, name & description",
+    "Gruppenname (bei mehreren Personen)": "Group name (for several people)",
+    "HA Chat ist noch nicht eingerichtet.": "HA Chat is not set up yet.",
+    "Herunterladen": "Download",
+    "Herzen & Symbole": "Hearts & symbols",
+    "Heute": "Today",
+    "Hinzufügen": "Add",
+    "Häufig": "Frequent",
+    "Höchste Priorität": "Highest priority",
+    "Höchste Priorität ausschalten": "Turn off highest priority",
+    "Höchstens 10 Chats": "At most 10 chats",
+    "Höchstens 10 Dateien auf einmal": "At most 10 files at once",
+    "Höhe auf PC/Tablet": "Height on PC/tablet",
+    "Im Chat zeigen": "Show in chat",
+    "In allen Chats": "In all chats",
+    "In allen Chats und für alle Benutzer, mitsamt Anhängen.": "In all chats and for all users, including attachments.",
+    "In allen Nachrichten nach „{q}“ suchen": "Search all messages for “{q}”",
+    "In diesem Chat suchen": "Search in this chat",
+    "In „{name}“": "In “{name}”",
+    "Info": "Info",
+    "Info: gelesen von …": "Info: read by …",
+    "Jeder kann seine Erreichbarkeit unter Profil → „Erreichbarkeit testen“ selbst prüfen.": "Everyone can check their own reachability under Profile → “Test reachability”.",
+    "Kanal": "Channel",
+    "Karte {card} ≠ Integration {server} · neu laden": "Card {card} ≠ integration {server} · reload",
+    "Kategorie „Chat – Wichtig“ (erscheint nach der ersten Nachricht mit höchster Priorität): „Nicht stören ignorieren“ erlauben.": "Category “Chat – Important” (appears after the first highest-priority message): allow “Override Do Not Disturb”.",
+    "Kein Smartphone mit der Companion App – bekommt keine Push-Nachrichten": "No phone with the Companion app – gets no push notifications",
+    "Keine Chats mit diesem Namen": "No chats with this name",
+    "Keine Nachrichten mit „{q}“ gefunden.": "No messages found for “{q}”.",
+    "Keine neuen Nachrichten": "No new messages",
+    "Keine weiteren berechtigten Personen vorhanden.": "There are no other people with access.",
+    "Kommt bei den Empfängern auch durch „Nicht stören“ bzw. den Fokus-Modus (wenn erlaubt). Gilt für die nächste Nachricht.": "Gets through Do Not Disturb / Focus mode for the recipients (if allowed). Applies to the next message.",
+    "Kompakt": "Compact",
+    "Kontaktinfo": "Contact info",
+    "Lade Nachrichten …": "Loading messages …",
+    "Lade …": "Loading …",
+    "Laden fehlgeschlagen": "Loading failed",
+    "Leeren": "Clear",
+    "Links": "Links",
+    "Löschen": "Delete",
+    "Medien": "Media",
+    "Medien löschen": "Delete media",
+    "Medien, Dateien & Links": "Media, files & links",
+    "Mehr laden": "Load more",
+    "Mein Profil": "My profile",
+    "Mindestens 2 Zeichen eingeben. Gesucht wird in Texten und Dateinamen.": "Enter at least 2 characters. Texts and file names are searched.",
+    "Mit höchster Priorität senden": "Send with highest priority",
+    "Mitglieder": "Members",
+    "Mitglieder ({n})": "Members ({n})",
+    "Mitglieder hinzufügen": "Add members",
+    "Nachricht bearbeiten": "Edit message",
+    "Nachricht für alle löschen?": "Delete the message for everyone?",
+    "Nachricht gelöscht": "Message deleted",
+    "Nachricht schreiben": "Write a message",
+    "Nachrichten (Datenbank)": "Messages (database)",
+    "Nachrichten durchsuchen": "Search messages",
+    "Nachrichten werden automatisch nach {n} Tagen gelöscht (änderbar unter Einstellungen → Geräte & Dienste → HA Chat → Konfigurieren).": "Messages are deleted automatically after {n} days (can be changed under Settings → Devices & services → HA Chat → Configure).",
+    "Nachrichteninfo": "Message info",
+    "Neuer Chat": "New chat",
+    "Neuere Nachrichten werden geladen …": "Loading newer messages …",
+    "Noch keine Chats – starte mit +": "No chats yet – start with +",
+    "Noch keine Chats.": "No chats yet.",
+    "Noch keine Dateien": "No files yet",
+    "Noch keine Fotos oder Videos": "No photos or videos yet",
+    "Noch keine Gruppenbeschreibung": "No group description yet",
+    "Noch keine Links": "No links yet",
+    "Noch keine Nachrichten": "No messages yet",
+    "Noch nicht gelesen ({n})": "Not read yet ({n})",
+    "Noch von niemandem": "Not by anyone yet",
+    "Nur für Administratoren": "Administrators only",
+    "Nur für dich löschen?": "Delete for you only?",
+    "Online-Status ist verborgen": "Online status is hidden",
+    "Online-Status wird angezeigt": "Online status is shown",
+    "Online-Status zeigen": "Show online status",
+    "Optional: Text dazu schreiben": "Optional: add a text",
+    "Originalqualität (nicht verkleinern)": "Original quality (don't resize)",
+    "Platzbedarf je Chat": "Space used per chat",
+    "Privater Chat für berechtigte Benutzer (WhatsApp-ähnlich).": "Private chat for authorised users (WhatsApp-like).",
+    "Profil- & Gruppenbilder": "Profile & group pictures",
+    "Profilbild entfernen": "Remove profile picture",
+    "Profilbild festlegen": "Set profile picture",
+    "Profilbild ändern": "Change profile picture",
+    "Push bereit": "push ready",
+    "Push nicht eingerichtet": "push not set up",
+    "Reaktion": "Reaction",
+    "Reaktionen": "Reactions",
+    "Reaktionen anzeigen": "Show reactions",
+    "Schließen": "Close",
+    "Schnell antworten an {name}": "Quick reply to {name}",
+    "Seite bzw. App neu laden": "Reload the page or app",
+    "Sende … (noch {n})": "Sending … ({n} left)",
+    "Senden": "Send",
+    "Speicher": "Storage",
+    "Speicher & Geräte": "Storage & devices",
+    "Speicher & Geräte (Admin)": "Storage & devices (admin)",
+    "Speichern": "Save",
+    "Sperre jetzt das Display oder wechsle in eine andere App – so prüfst du, ob Nachrichten auch bei geschlossener App ankommen.": "Lock the screen now or switch to another app – this checks that messages also arrive when the app is closed.",
+    "Sprache": "Language",
+    "Stand vor {age}": "{age} ago",
+    "Standort": "Location",
+    "Standort in Karten-App öffnen": "Open location in maps app",
+    "Standort senden": "Send location",
+    "Standort wird bei der Companion App angefragt …": "requesting location from the Companion app …",
+    "Suchbegriff": "Search term",
+    "Suche fehlgeschlagen": "Search failed",
+    "Suche schließen": "Close search",
+    "Suche …": "Searching …",
+    "Text kopieren": "Copy text",
+    "Tiere & Natur": "Animals & nature",
+    "Tipps, falls keine Benachrichtigung ankommt": "Tips if no notification arrives",
+    "Tippst du die Benachrichtigung an, öffnet sich <b>{link}</b> – dort, wo du die Chat-Karte benutzt.": "Tapping the notification opens <b>{link}</b> – where you use the chat card.",
+    "Titel": "Title",
+    "Trotzdem senden": "Send anyway",
+    "Unbekannt": "Unknown",
+    "Ungelesene Nachrichten, letzte Nachrichten und Schnellantwort.": "Unread messages, latest messages and quick reply.",
+    "Upload fehlgeschlagen ({status})": "Upload failed ({status})",
+    "Verlassen": "Leave",
+    "Verlauf leeren": "Clear history",
+    "Verlauf von „{name}“ leeren?": "Clear the history of “{name}”?",
+    "Version der Chat-Karte": "Version of the chat card",
+    "Version ohne Google-Dienste (F-Droid): Companion App → Server → „Dauerhafte Verbindung“ auf „Immer“.": "Version without Google services (F-Droid): Companion app → Server → set “Persistent connection” to “Always”.",
+    "Verwaiste Dateien entfernen?": "Remove orphaned files?",
+    "Video": "Video",
+    "Weitere Optionen": "More options",
+    "Weitergeleitet": "Forwarded",
+    "Weiterleiten": "Forward",
+    "Weiterleiten an …": "Forward to …",
+    "Wichtig": "Important",
+    "Wichtige Nachricht schreiben": "Write an important message",
+    "Worum geht es in dieser Gruppe? (für alle Mitglieder sichtbar)": "What is this group about? (visible to all members)",
+    "Wähle links einen Chat aus oder starte einen neuen.": "Choose a chat on the left or start a new one.",
+    "Xiaomi, Huawei, Honor, Oppo, teils Samsung: „Autostart“ erlauben und die App von „Schlafende Apps“ ausnehmen.": "Xiaomi, Huawei, Honor, Oppo, some Samsung: allow “Autostart” and exclude the app from “Sleeping apps”.",
+    "Zu den neuesten Nachrichten": "To the newest messages",
+    "Zugriff verweigert": "access denied",
+    "Zuhause & Alltag": "Home & everyday",
+    "Zuletzt verwendet": "Recently used",
+    "Zum Empfangen braucht das Handy keine Verbindung nach Hause – Home Assistant selbst muss aber Internet haben. Zum Antworten aus der Benachrichtigung unterwegs ist Fernzugriff nötig (z. B. Home Assistant Cloud).": "To receive notifications the phone needs no connection to home – but Home Assistant itself needs internet access. Replying from the notification while away needs remote access (e.g. Home Assistant Cloud).",
+    "Zurück": "Back",
+    "bearbeitet": "edited",
+    "gehören zu keiner Nachricht mehr.": "no longer belong to any message.",
+    "gelesen": "read",
+    "heute": "today",
+    "heute 1 Chat-Push": "1 chat push today",
+    "heute {n} Chat-Pushs": "{n} chat pushes today",
+    "in Karten öffnen": "open in maps",
+    "kein aktueller Standort erhalten": "no current location received",
+    "keine Standortdaten von der App": "no location data from the app",
+    "nicht verfügbar": "not available",
+    "nur über HTTPS möglich": "only possible over HTTPS",
+    "online": "online",
+    "seit {date}": "since {date}",
+    "wird ermittelt …": "locating …",
+    "z. B. /dashboard-chat/0 – leer lassen, um den Chat in einem Fenster zu öffnen": "e.g. /dashboard-chat/0 – leave empty to open the chat in a pop-up",
+    "z. B. 600px oder 80vh": "e.g. 600px or 80vh",
+    "zu groß (max. 100 MB)": "too large (max. 100 MB)",
+    "zuletzt online am {date} um {time}": "last seen {date} at {time}",
+    "zuletzt online gestern um {time}": "last seen yesterday at {time}",
+    "zuletzt online heute um {time}": "last seen today at {time}",
+    "{name} entfernen": "Remove {name}",
+    "{name} hat die Gruppe verlassen": "{name} left the group",
+    "{name} schreibt": "{name} is typing",
+    "{name} schreibt …": "{name} is typing …",
+    "{n} Anhänge": "{n} attachments",
+    "{n} Dateien": "{n} files",
+    "{n} Dateien – der Text wird mit der ersten gesendet": "{n} files – the text is sent with the first one",
+    "{n} Min.": "{n} min",
+    "{n} Nachrichten": "{n} messages",
+    "{n} Sek.": "{n} s",
+    "{n} Std.": "{n} h",
+    "{n} Tage": "{n} days",
+    "{n} Tagen": "{n} days",
+    "{n} neu": "{n} new",
+    "{n} online": "{n} online",
+    "{n} ungelesen": "{n} unread",
+    "{n} verwaiste Dateien": "{n} orphaned files",
+    "Ältere Nachrichten in allen Chats löschen: älter als": "Delete older messages in all chats: older than",
+    "Ältere Nachrichten werden geladen …": "Loading older messages …",
+    "Öffnen": "Open",
+    "„App-Aktivität pausieren, wenn nicht verwendet“ ausschalten.": "Turn off “Pause app activity if unused”.",
+  };
+  const langOf = (code) => (String(code || "").toLowerCase().startsWith("de") ? "de" : "en");
+  const I18N = { lang: langOf(document.documentElement.lang || navigator.language), locale: "de-DE", forced: null };
+  I18N.locale = I18N.lang === "de" ? "de-DE" : "en-GB";
+  const T = (s, v) => {
+    let out = I18N.lang === "de" ? s : (EN[s] ?? s);
+    if (v) out = out.replace(/\{(\w+)\}/g, (m, k) => (v[k] ?? m));
+    return out;
+  };
+  // Liefert true, wenn sich die Sprache geändert hat.
+  const setLang = (hass, cfgLang) => {
+    if (cfgLang === "de" || cfgLang === "en") I18N.forced = cfgLang;
+    const hl = hass?.locale?.language || hass?.language || "";
+    const lang = I18N.forced || (hl ? langOf(hl) : I18N.lang);
+    const locale = lang === "de" ? "de-DE" : (/^en/i.test(hl) ? hl : "en-GB");
+    const changed = lang !== I18N.lang || locale !== I18N.locale;
+    I18N.lang = lang;
+    I18N.locale = locale;
+    return changed;
+  };
+  // Systemmeldungen des Servers (gespeichert auf Deutsch) in der Sprache des Lesers
+  const sysText = (m) => {
+    const s = m?.text || "";
+    if (m?.sender_id !== SYSTEM || I18N.lang === "de") return s;
+    const g = s.match(/^(.+) hat die Gruppe verlassen$/);
+    return g ? T("{name} hat die Gruppe verlassen", { name: g[1] }) : s;
+  };
+  // Visueller Karten-Editor
+  const LANG_OPTIONS = () => [
+    { value: "auto", label: T("Automatisch (Sprache des Benutzerprofils)") },
+    { value: "de", label: "Deutsch" },
+    { value: "en", label: "English" },
+  ];
+  const FORM_LABELS = () => ({
+    language: T("Sprache"), height: T("Höhe auf PC/Tablet"), fit_screen: T("Auf dem Handy bildschirmfüllend"),
+    title: T("Titel"), messages: T("Anzahl angezeigter Nachrichten"), navigation_path: T("Dashboard zum Öffnen (statt Fenster)"),
+  });
+  const FORM_HELPERS = () => ({
+    height: T("z. B. 600px oder 80vh"),
+    navigation_path: T("z. B. /dashboard-chat/0 – leer lassen, um den Chat in einem Fenster zu öffnen"),
+  });
 
   // ------------------------------------------------------------ Hilfsfunktionen
   const esc = (s) =>
@@ -22,9 +370,9 @@
     const d = new Date(ts * 1000);
     const today = new Date();
     const y = new Date(); y.setDate(today.getDate() - 1);
-    if (d.toDateString() === today.toDateString()) return "Heute";
-    if (d.toDateString() === y.toDateString()) return "Gestern";
-    return d.toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
+    if (d.toDateString() === today.toDateString()) return T("Heute");
+    if (d.toDateString() === y.toDateString()) return T("Gestern");
+    return d.toLocaleDateString(I18N.locale, { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
   };
   const fmtListTime = (ts) => {
     if (!ts) return "";
@@ -32,9 +380,9 @@
     const now = new Date();
     if (d.toDateString() === now.toDateString()) return fmtTime(ts);
     const diff = (now - d) / 86400000;
-    if (diff < 2 && fmtDay(ts) === "Gestern") return "Gestern";
-    if (diff < 7) return d.toLocaleDateString("de-DE", { weekday: "short" });
-    return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
+    if (diff < 2 && fmtDay(ts) === T("Gestern")) return T("Gestern");
+    if (diff < 7) return d.toLocaleDateString(I18N.locale, { weekday: "short" });
+    return d.toLocaleDateString(I18N.locale, { day: "2-digit", month: "2-digit" });
   };
   // Muss zu INLINE_TYPES in http.py passen: nur diese Typen werden direkt angezeigt.
   const INLINE = new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "image/avif", "image/heic", "image/heif", "image/bmp",
@@ -51,8 +399,8 @@
     const word = String(name || "").trim().split(/\s+/).map((w) => w.replace(/^[^\p{L}\p{N}]+/u, "")).find(Boolean) || "";
     const ch = Array.from(word);
     if (!ch.length) return "?";
-    const a = ch[0].toLocaleUpperCase("de-DE");
-    const b = ch[1] && /[\p{L}\p{N}]/u.test(ch[1]) ? ch[1].toLocaleLowerCase("de-DE") : "";
+    const a = ch[0].toLocaleUpperCase(I18N.locale);
+    const b = ch[1] && /[\p{L}\p{N}]/u.test(ch[1]) ? ch[1].toLocaleLowerCase(I18N.locale) : "";
     return (a.length > 1 ? ch[0] : a) + b;
   };
   const PALETTE = ["#00796b", "#c2185b", "#5e35b1", "#1565c0", "#2e7d32", "#6d4c41", "#ad1457", "#455a64", "#ef6c00", "#00838f"];
@@ -62,14 +410,14 @@
     return PALETTE[h % PALETTE.length];
   };
   const attLabel = (mime) =>
-    mime?.startsWith("image/") ? "Foto" : mime?.startsWith("video/") ? "Video" : mime?.startsWith("audio/") ? "Audiodatei" : "Datei";
+    mime?.startsWith("image/") ? T("Foto") : mime?.startsWith("video/") ? T("Video") : mime?.startsWith("audio/") ? T("Audiodatei") : T("Datei");
   const preview = (m) => {
     if (!m) return "";
-    if (m.deleted) return "Nachricht gelöscht";
+    if (m.deleted) return T("Nachricht gelöscht");
     const imp = m.important ? "❗ " : "";
-    if (m.location && !m.text) return imp + "📍 Standort";
+    if (m.location && !m.text) return imp + "📍 " + T("Standort");
     const att = m.attachment ? attLabel(m.attachment.mime) : "";
-    return imp + (att && m.text ? `${att}: ${m.text}` : att || m.text);
+    return imp + (att && m.text ? `${att}: ${sysText(m)}` : att || sysText(m));
   };
   // Ausschnitt um den Suchbegriff mit Hervorhebung (sicher escaped)
   const highlight = (text, q) => {
@@ -84,18 +432,18 @@
   const fmtDateTime = (ts) => {
     const d = new Date(ts * 1000);
     const today = d.toDateString() === new Date().toDateString();
-    return (today ? "heute" : d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })) + ", " + fmtTime(ts);
+    return (today ? T("heute") : d.toLocaleDateString(I18N.locale, { day: "2-digit", month: "2-digit" })) + ", " + fmtTime(ts);
   };
   const fmtLastSeen = (ts) => {
     const d = new Date(ts * 1000);
     const now = new Date();
     const yest = new Date(now);
     yest.setDate(now.getDate() - 1);
-    let day;
-    if (d.toDateString() === now.toDateString()) day = "heute";
-    else if (d.toDateString() === yest.toDateString()) day = "gestern";
-    else day = "am " + d.toLocaleDateString("de-DE", d.getFullYear() === now.getFullYear() ? { day: "2-digit", month: "2-digit" } : { day: "2-digit", month: "2-digit", year: "numeric" });
-    return `zuletzt online ${day} um ${fmtTime(ts)}`;
+    const time = fmtTime(ts);
+    if (d.toDateString() === now.toDateString()) return T("zuletzt online heute um {time}", { time });
+    if (d.toDateString() === yest.toDateString()) return T("zuletzt online gestern um {time}", { time });
+    const date = d.toLocaleDateString(I18N.locale, d.getFullYear() === now.getFullYear() ? { day: "2-digit", month: "2-digit" } : { day: "2-digit", month: "2-digit", year: "numeric" });
+    return T("zuletzt online am {date} um {time}", { date, time });
   };
   const fmtBytes = (b) => (!b ? "0 KB" : b >= 1073741824 ? (b / 1073741824).toFixed(2) + " GB" : fmtSize(b));
   const withDot = (html, on) => (on ? `<span class="avw">${html}<span class="dot" title="online"></span></span>` : html);
@@ -107,10 +455,10 @@
   };
   const fmtAge = (sec) => {
     sec = Math.max(0, Math.round(sec));
-    if (sec < 60) return `${sec} Sek.`;
-    if (sec < 3600) return `${Math.round(sec / 60)} Min.`;
-    if (sec < 86400) return `${Math.round(sec / 3600)} Std.`;
-    return `${Math.round(sec / 86400)} Tagen`;
+    if (sec < 60) return T("{n} Sek.", { n: sec });
+    if (sec < 3600) return T("{n} Min.", { n: Math.round(sec / 60) });
+    if (sec < 86400) return T("{n} Std.", { n: Math.round(sec / 3600) });
+    return T("{n} Tagen", { n: Math.round(sec / 86400) });
   };
 
   // Bilder vor dem Hochladen verkleinern (längste Seite max. 1920 px, JPEG). Entfernt dabei
@@ -161,7 +509,7 @@
   };
   const mapsLink = (l) => {
     const ua = navigator.userAgent || "";
-    if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return `https://maps.apple.com/?ll=${l.lat},${l.lon}&q=Standort`;
+    if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return `https://maps.apple.com/?ll=${l.lat},${l.lon}&q=${encodeURIComponent(T("Standort"))}`;
     if (/Android/.test(ua)) return `https://www.google.com/maps/search/?api=1&query=${l.lat},${l.lon}`;
     return `https://www.openstreetmap.org/?mlat=${l.lat}&mlon=${l.lon}#map=17/${l.lat}/${l.lon}`;
   };
@@ -315,6 +663,13 @@
     }
 
     // Dem Server melden, auf welchem Dashboard die Karte genutzt wird (Ziel für Pushs)
+    // Sprache des Benutzers melden – der Server schreibt Push-Mitteilungen und Fehlermeldungen darin
+    reportLanguage(lang) {
+      if (!this._subscribed || this._reportedLang === lang) return;
+      this._reportedLang = lang;
+      this.ws({ type: "ha_chat/set_language", language: lang }).catch(() => { this._reportedLang = null; });
+    }
+
     reportView(kind) {
       if (!this._subscribed) return;
       const path = location.pathname;
@@ -490,12 +845,12 @@
       fd.append("file", file, file.name || "datei");
       const resp = await this.hass.fetchWithAuth("/api/ha_chat/upload", { method: "POST", body: fd });
       const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(data.message || `Upload fehlgeschlagen (${resp.status})`);
+      if (!resp.ok) throw new Error(data.message || T("Upload fehlgeschlagen ({status})", { status: resp.status }));
       return data;
     }
 
     me() {
-      return (this.info?.users || []).find((u) => u.id === this.info?.me) || { id: this.info?.me, name: "Ich", picture: null };
+      return (this.info?.users || []).find((u) => u.id === this.info?.me) || { id: this.info?.me, name: T("Ich"), picture: null };
     }
 
     totalUnread() {
@@ -659,7 +1014,7 @@
   .th .x{position:absolute;top:-6px;right:-6px;width:24px;height:24px;border-radius:12px;border:none;background:var(--hc-text);color:var(--hc-bg);display:flex;align-items:center;justify-content:center}
   .trow{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--hc-sub)}
   .trow label{display:flex;align-items:center;gap:6px;cursor:pointer}
-  .chat.dropping::after{content:"Dateien hier ablegen";position:absolute;inset:8px;border:2px dashed var(--hc-acc);border-radius:12px;background:color-mix(in srgb,var(--hc-acc) 10%,var(--hc-bg));display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--hc-acc);z-index:6}
+  .chat.dropping::after{content:attr(data-drop);position:absolute;inset:8px;border:2px dashed var(--hc-acc);border-radius:12px;background:color-mix(in srgb,var(--hc-acc) 10%,var(--hc-bg));display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--hc-acc);z-index:6}
   .pop{position:absolute;left:4px;right:4px;bottom:56px;z-index:7;background:var(--hc-bg);border:1px solid var(--hc-div);border-radius:18px;box-shadow:0 6px 20px rgba(0,0,0,.18);max-height:260px;overflow-y:auto}
   .emo{padding:6px 8px}
   .emo h4{margin:8px 4px 4px;font-size:12px;font-weight:500;color:var(--hc-sub)}
@@ -754,17 +1109,54 @@
       return { height: "600px" };
     }
 
-    static getConfigElement() {
-      return null;
+    static getConfigForm() {
+      return {
+        schema: [
+          { name: "language", selector: { select: { mode: "dropdown", options: LANG_OPTIONS() } } },
+          { name: "height", selector: { text: {} } },
+          { name: "fit_screen", default: true, selector: { boolean: {} } },
+        ],
+        computeLabel: (s) => FORM_LABELS()[s.name],
+        computeHelper: (s) => FORM_HELPERS()[s.name],
+      };
     }
 
     setConfig(config) {
       this.config = { height: "600px", ...(config || {}) };
+      this._syncLang(this._hass);
       if (this._wrap) { this._wrap.style.height = this.config.height; this._fit(); }
     }
 
     getCardSize() {
       return 10;
+    }
+
+    // Sprache bestimmen; hat sie sich seit dem letzten Zeichnen geändert, alles neu beschriften
+    _syncLang(hass) {
+      setLang(hass, this.config?.language);
+      const prev = this._lang;
+      this._lang = I18N.lang;
+      if (prev && prev !== I18N.lang && this._wrap) this._relabel();
+    }
+
+    // Nach einem Sprachwechsel: feste Beschriftungen neu setzen und alles neu zeichnen
+    _relabel() {
+      const root = this.shadowRoot;
+      if (!root || !this._wrap) return;
+      const set = (sel, attrs) => { const el = root.querySelector(sel); if (el) for (const [k, v] of Object.entries(attrs)) k === "text" ? (el.textContent = v) : el.setAttribute(k, v); };
+      set(".list .head h2", { text: T("Chat") });
+      set('[data-a="search-all"]', { "aria-label": T("Nachrichten durchsuchen"), title: T("Nachrichten durchsuchen") });
+      set('[data-a="new"]', { "aria-label": T("Neuer Chat"), title: T("Neuer Chat") });
+      set(".search input", { placeholder: T("Chats durchsuchen"), "aria-label": T("Chats durchsuchen") });
+      set('[data-a="latest"]', { "aria-label": T("Zu den neuesten Nachrichten"), title: T("Zu den neuesten Nachrichten") });
+      set('[data-a="attachmenu"]', { "aria-label": T("Anhängen: Kamera, Fotos, Datei oder Standort"), title: T("Anhängen") });
+      set('[data-a="emoji"]', { "aria-label": T("Emoji einfügen"), title: T("Emoji") });
+      set("section.chat", { "data-drop": T("Dateien hier ablegen") });
+      this._setImportant(this._important);
+      for (const el of root.querySelectorAll("[data-sig]")) delete el.dataset.sig;
+      if (this.$msgs && this._openId) { this.$msgs.innerHTML = ""; this._forceBottom = true; this._stick = true; }
+      if (this._ready) this._client.reportLanguage(I18N.lang);
+      this._schedule();
     }
 
     getGridOptions() {
@@ -774,6 +1166,7 @@
     set hass(hass) {
       this._hass = hass;
       this._applyTheme(hass);
+      this._syncLang(hass);
       if (!this._client) {
         this._client = ChatClient.get(hass);
         this._build();
@@ -782,6 +1175,7 @@
         this._client.ready
           .then(() => {
             this._ready = true;
+            this._client.reportLanguage(I18N.lang);
             const want = this.config?.open_conversation;
             if (want && this._client.convs.has(Number(want))) this._open(Number(want));
             else this._checkDeepLink();
@@ -790,7 +1184,7 @@
           })
           .catch((e) => {
             this._fatal = e?.code === "unknown_command"
-              ? "Die Integration „HA Chat“ ist noch nicht eingerichtet (Einstellungen → Geräte & Dienste)."
+              ? T("Die Integration „HA Chat“ ist noch nicht eingerichtet (Einstellungen → Geräte & Dienste).")
               : e?.message || String(e);
             this._schedule();
           });
@@ -839,28 +1233,28 @@
       root.innerHTML = `<style>${STYLE}</style>
       <ha-card><div class="wrap" style="height:${esc(this.config?.height || "600px")}">
         <section class="list">
-          <div class="head"><span class="mebox"></span><h2>Chat</h2>
-            <button class="ib card" data-a="search-all" aria-label="Nachrichten durchsuchen" title="Nachrichten durchsuchen">${icon("search")}</button>
-            <button class="ib pri" data-a="new" aria-label="Neuer Chat" title="Neuer Chat">${icon("plus")}</button></div>
+          <div class="head"><span class="mebox"></span><h2>${T("Chat")}</h2>
+            <button class="ib card" data-a="search-all" aria-label="${T("Nachrichten durchsuchen")}" title="${T("Nachrichten durchsuchen")}">${icon("search")}</button>
+            <button class="ib pri" data-a="new" aria-label="${T("Neuer Chat")}" title="${T("Neuer Chat")}">${icon("plus")}</button></div>
           <div class="infochips" hidden></div>
-          <div class="search"><label>${icon("search", 18)}<input type="search" placeholder="Chats durchsuchen" aria-label="Chats durchsuchen"></label></div>
+          <div class="search"><label>${icon("search", 18)}<input type="search" placeholder="${T("Chats durchsuchen")}" aria-label="${T("Chats durchsuchen")}"></label></div>
           <div class="items" role="list"></div>
           <div class="ver"></div>
         </section>
-        <section class="chat">
+        <section class="chat" data-drop="${T("Dateien hier ablegen")}">
           <div class="head chead"></div>
           <div class="msgs" aria-live="polite"></div>
-          <button class="tolatest" data-a="latest" aria-label="Zu den neuesten Nachrichten" title="Zu den neuesten Nachrichten" hidden>${icon("down")}</button>
+          <button class="tolatest" data-a="latest" aria-label="${T("Zu den neuesten Nachrichten")}" title="${T("Zu den neuesten Nachrichten")}" hidden>${icon("down")}</button>
           <div class="bar replybar" hidden></div>
           <div class="tray" hidden></div>
           <div class="bar prio" hidden></div>
           <div class="pop emo" hidden></div>
           <div class="pop mlist" hidden></div>
           <div class="composer">
-            <button class="ib" data-a="attachmenu" aria-label="Anhängen: Kamera, Fotos, Datei oder Standort" title="Anhängen">${icon("clip")}</button>
-            <button class="ib" data-a="emoji" aria-label="Emoji einfügen" title="Emoji">${icon("smile")}</button>
-            <textarea rows="1" placeholder="Nachricht schreiben" aria-label="Nachricht schreiben"></textarea>
-            <button class="ib acc" data-a="primary" aria-label="Senden" disabled>${icon("send")}</button>
+            <button class="ib" data-a="attachmenu" aria-label="${T("Anhängen: Kamera, Fotos, Datei oder Standort")}" title="${T("Anhängen")}">${icon("clip")}</button>
+            <button class="ib" data-a="emoji" aria-label="${T("Emoji einfügen")}" title="${T("Emoji")}">${icon("smile")}</button>
+            <textarea rows="1" placeholder="${T("Nachricht schreiben")}" aria-label="${T("Nachricht schreiben")}"></textarea>
+            <button class="ib acc" data-a="primary" aria-label="${T("Senden")}" disabled>${icon("send")}</button>
           </div>
           <input type="file" class="fin" multiple hidden>
           <input type="file" class="cin" accept="image/*" capture="environment" hidden>
@@ -1051,7 +1445,7 @@
 
     _render() {
       if (this._fatal || (this._client?.info && !this._client.info.allowed)) {
-        const text = this._fatal || "Du bist für den Chat nicht freigeschaltet. Ein Administrator kann dich unter Einstellungen → Geräte & Dienste → HA Chat → Konfigurieren hinzufügen.";
+        const text = this._fatal || T("Du bist für den Chat nicht freigeschaltet. Ein Administrator kann dich unter Einstellungen → Geräte & Dienste → HA Chat → Konfigurieren hinzufügen.");
         this._wrap.innerHTML = `<div class="info" style="width:100%">${esc(text)}</div>`;
         return;
       }
@@ -1074,8 +1468,8 @@
       this.$ver.dataset.sig = sig;
       this.$ver.classList.toggle("warn", mismatch);
       this.$ver.innerHTML = mismatch
-        ? `<button data-a="reload" title="Seite bzw. App neu laden">Karte ${esc(VERSION)} ≠ Integration ${esc(server)} · neu laden</button>`
-        : `<span title="Version der Chat-Karte">HA Chat ${esc(VERSION)}</span>`;
+        ? `<button data-a="reload" title="${T("Seite bzw. App neu laden")}">${esc(T("Karte {card} ≠ Integration {server} · neu laden", { card: VERSION, server }))}</button>`
+        : `<span title="${T("Version der Chat-Karte")}">HA Chat ${esc(VERSION)}</span>`;
       this.$ver.insertAdjacentHTML("beforeend", `<span class="cpy"> · © U. Hartung</span>`);
     }
 
@@ -1084,14 +1478,14 @@
       const sig = JSON.stringify([me.name, me.picture]);
       if (this.$mebox.dataset.sig === sig) return;
       this.$mebox.dataset.sig = sig;
-      this.$mebox.innerHTML = `<button class="me" data-a="profile" aria-label="Mein Profil: ${esc(me.name)}" title="Mein Profil">${avatar(me.name, me.picture, me.id, 36)}</button>`;
+      this.$mebox.innerHTML = `<button class="me" data-a="profile" aria-label="${T("Mein Profil")}: ${esc(me.name)}" title="${T("Mein Profil")}">${avatar(me.name, me.picture, me.id, 36)}</button>`;
     }
 
     _renderChips() {
       const unread = this._client.totalUnread();
       const online = Object.values(this._client.info?.presence || {}).filter((p) => p?.online).length;
-      const html = (unread ? `<span class="ichip"><i></i>${unread} ungelesen</span>` : "")
-        + (online ? `<span class="ichip"><i class="on"></i>${online} online</span>` : "");
+      const html = (unread ? `<span class="ichip"><i></i>${T("{n} ungelesen", { n: unread })}</span>` : "")
+        + (online ? `<span class="ichip"><i class="on"></i>${T("{n} online", { n: online })}</span>` : "");
       if (this.$chips.dataset.sig === html) return;
       this.$chips.dataset.sig = html;
       this.$chips.innerHTML = html;
@@ -1104,19 +1498,19 @@
       const items = this._client.sortedConversations().filter((c) => !q || c.name.toLowerCase().includes(q));
       const raw = this.$search.value.trim();
       const msgSearch = raw.length >= 2
-        ? `<button class="msearch" data-a="search-from-list">${icon("search", 18)}<span>In allen Nachrichten nach „${esc(raw)}“ suchen</span></button>`
+        ? `<button class="msearch" data-a="search-from-list">${icon("search", 18)}<span>${T("In allen Nachrichten nach „{q}“ suchen", { q: esc(raw) })}</span></button>`
         : "";
       if (!items.length) {
-        this.$items.innerHTML = `<div class="info">${q ? "Keine Chats mit diesem Namen" : "Noch keine Chats – starte mit +"}</div>${msgSearch}`;
+        this.$items.innerHTML = `<div class="info">${q ? T("Keine Chats mit diesem Namen") : T("Noch keine Chats – starte mit +")}</div>${msgSearch}`;
         return;
       }
       this.$items.innerHTML = items
         .map((c) => {
           const lm = c.last_message;
           const typing = this._typingFor(c.id);
-          let pv = typing ? `${typing} schreibt …` : preview(lm);
+          let pv = typing ? T("{name} schreibt …", { name: typing }) : preview(lm);
           if (!typing && lm && c.is_group && lm.sender_id !== this._me()) pv = `${lm.sender_name}: ${pv}`;
-          if (!typing && lm && lm.sender_id === this._me()) pv = `Du: ${pv}`;
+          if (!typing && lm && lm.sender_id === this._me()) pv = `${T("Du")}: ${pv}`;
           return `<button class="item ${c.id === this._openId ? "sel" : ""}" data-a="open" data-id="${c.id}" role="listitem">
             ${withDot(avatar(c.name, c.picture, "c" + c.id, 44, c.is_system), this._isOnline(c))}
             <span class="txt"><span class="row"><span class="name">${esc(c.name)}</span>
@@ -1139,7 +1533,7 @@
     _statusText(uid) {
       const p = this._client.presence(uid);
       if (!p) return null;
-      if (p.online) return { text: "online", on: true };
+      if (p.online) return { text: T("online"), on: true };
       if (p.last_seen) return { text: fmtLastSeen(p.last_seen), on: false };
       return null;
     }
@@ -1191,7 +1585,7 @@
         this.$chead.innerHTML = "";
         delete this.$chead.dataset.sig; // sonst bleibt der Kopf beim erneuten Öffnen desselben Chats leer
         this.$chead.style.display = "none";
-        this.$msgs.innerHTML = `<div class="empty">${icon("chat", 48)}<div>Wähle links einen Chat aus oder starte einen neuen.</div></div>`;
+        this.$msgs.innerHTML = `<div class="empty">${icon("chat", 48)}<div>${T("Wähle links einen Chat aus oder starte einen neuen.")}</div></div>`;
         this.$reply.hidden = true;
         return;
       }
@@ -1199,21 +1593,21 @@
       const typing = this._typingFor(c.id);
       const others = c.members.filter((m) => m.user_id !== this._me());
       let sub;
-      if (typing) sub = `<span class="s typing">${esc(typing)} schreibt …</span>`;
-      else if (c.is_group) sub = `<span class="s">${esc(c.members.map((m) => (m.user_id === this._me() ? "Du" : m.name)).join(", "))}</span>`;
+      if (typing) sub = `<span class="s typing">${esc(T("{name} schreibt …", { name: typing }))}</span>`;
+      else if (c.is_group) sub = `<span class="s">${esc(c.members.map((m) => (m.user_id === this._me() ? T("Du") : m.name)).join(", "))}</span>`;
       else {
         const stt = c.other_id && c.other_id !== this._me() ? this._statusText(c.other_id) : null;
-        sub = stt ? `<span class="s ${stt.on ? "on" : ""}">${esc(stt.text)}</span>` : `<span class="s">Direktnachricht</span>`;
+        sub = stt ? `<span class="s ${stt.on ? "on" : ""}">${esc(stt.text)}</span>` : `<span class="s">${T("Direktnachricht")}</span>`;
       }
-      const menu = `<button class="ib" data-a="convmenu" aria-label="Weitere Optionen">${icon("more")}</button>`;
+      const menu = `<button class="ib" data-a="convmenu" aria-label="${T("Weitere Optionen")}">${icon("more")}</button>`;
       const online = this._isOnline(c);
       const headSig = JSON.stringify([c.name, c.picture, sub, menu, others.length, online]);
       if (this.$chead.dataset.sig !== headSig) {
         this.$chead.dataset.sig = headSig;
-        this.$chead.innerHTML = `<button class="ib backbtn" data-a="back" aria-label="Zurück">${icon("back")}</button>
-          <button class="tap" data-a="convinfo" aria-label="${c.is_group && !c.is_system ? "Gruppeninfo" : "Info"}: ${esc(c.name)}">${withDot(avatar(c.name, c.picture, "c" + c.id, 44, c.is_system), online)}
+        this.$chead.innerHTML = `<button class="ib backbtn" data-a="back" aria-label="${T("Zurück")}">${icon("back")}</button>
+          <button class="tap" data-a="convinfo" aria-label="${c.is_group && !c.is_system ? T("Gruppeninfo") : T("Info")}: ${esc(c.name)}">${withDot(avatar(c.name, c.picture, "c" + c.id, 44, c.is_system), online)}
           <span class="ctitle"><span class="n">${esc(c.name)}</span>${sub}</span></button>
-          <button class="ib" data-a="search-conv" aria-label="In diesem Chat suchen" title="In diesem Chat suchen">${icon("search")}</button>${menu}`;
+          <button class="ib" data-a="search-conv" aria-label="${T("In diesem Chat suchen")}" title="${T("In diesem Chat suchen")}">${icon("search")}</button>${menu}`;
       }
       this._renderMessages(c);
       this._renderReplyBar();
@@ -1225,7 +1619,7 @@
       const st = this._client.msgs.get(c.id);
       const box = this.$msgs;
       if (!st) {
-        if (!box.querySelector(".empty")) box.innerHTML = `<div class="empty">Lade Nachrichten …</div>`;
+        if (!box.querySelector(".empty")) box.innerHTML = `<div class="empty">${T("Lade Nachrichten …")}</div>`;
         return;
       }
       box.querySelector(".empty")?.remove();
@@ -1235,8 +1629,8 @@
       const me = this._me();
       const others = c.members.filter((m) => m.user_id !== me);
       const items = [];
-      if (st.all && !st.list.length) items.push({ key: "none", sig: "", html: `<div class="day">Noch keine Nachrichten</div>` });
-      if (!st.all) items.push({ key: "more", sig: "", html: `<div class="day">Ältere Nachrichten werden geladen …</div>` });
+      if (st.all && !st.list.length) items.push({ key: "none", sig: "", html: `<div class="day">${T("Noch keine Nachrichten")}</div>` });
+      if (!st.all) items.push({ key: "more", sig: "", html: `<div class="day">${T("Ältere Nachrichten werden geladen …")}</div>` });
       const tailInfo = !st.newest;
       let lastDay = null;
       for (const m of st.list) {
@@ -1250,9 +1644,9 @@
         const sig = JSON.stringify([m.text, m.deleted, m.edited_at, m.reactions, m.attachment?.id, read, m.reply?.text, m.reply?.deleted, m.answer?.index, m.location?.ts, m.forwarded, m.important, c.members.length]);
         items.push({ key: "m" + m.id, sig, html: this._messageHtml(m, c, out, read) });
       }
-      if (tailInfo) items.push({ key: "newer", sig: "", html: `<div class="day">Neuere Nachrichten werden geladen …</div>` });
+      if (tailInfo) items.push({ key: "newer", sig: "", html: `<div class="day">${T("Neuere Nachrichten werden geladen …")}</div>` });
       const typing = this._typingFor(c.id);
-      if (typing && st.newest) items.push({ key: "typing", sig: "", html: `<div class="typing-dots" role="img" aria-label="${esc(typing)} schreibt"><i></i><i></i><i></i></div>` });
+      if (typing && st.newest) items.push({ key: "typing", sig: "", html: `<div class="typing-dots" role="img" aria-label="${esc(T("{name} schreibt", { name: typing }))}"><i></i><i></i><i></i></div>` });
 
       const existing = new Map([...box.children].map((el) => [el.dataset.key, el]));
       const keep = new Set();
@@ -1399,12 +1793,12 @@
       let inner = "";
       if (!out && (c.is_group || sys)) inner += `<div class="sn" style="--c:${sys ? "#e65100" : colorFor(m.sender_id)}">${esc(m.sender_name)}</div>`;
       if (m.deleted) {
-        inner += `<div class="del">Diese Nachricht wurde gelöscht</div>`;
+        inner += `<div class="del">${T("Diese Nachricht wurde gelöscht")}</div>`;
       } else {
-        if (m.important) inner += `<div class="impl">${icon("alert", 14)}Wichtig</div>`;
-        if (m.forwarded) inner += `<div class="fwd">${icon("forward", 14)}Weitergeleitet</div>`;
+        if (m.important) inner += `<div class="impl">${icon("alert", 14)}${T("Wichtig")}</div>`;
+        if (m.forwarded) inner += `<div class="fwd">${icon("forward", 14)}${T("Weitergeleitet")}</div>`;
         if (m.reply) {
-          const rt = m.reply.deleted ? "Gelöschte Nachricht" : m.reply.text || (m.reply.has_attachment ? "Anhang" : "");
+          const rt = m.reply.deleted ? T("Gelöschte Nachricht") : m.reply.text || (m.reply.has_attachment ? T("Anhang") : "");
           inner += `<div class="q" data-a="jump" data-id="${m.reply.id}" style="--c:${m.reply.sender_id === SYSTEM ? "#e65100" : colorFor(m.reply.sender_id || m.reply.sender_name)}"><b>${esc(m.reply.sender_name)}</b><span>${esc(rt)}</span></div>`;
         }
         const a = m.attachment;
@@ -1416,25 +1810,25 @@
         }
         if (m.location) {
           const l = m.location;
-          inner += `<a class="loc" href="${esc(mapsLink(l))}" target="_blank" rel="noopener" aria-label="Standort in Karten-App öffnen">${mapHtml(l, 240, 130)}<span class="lt"><b>📍 Standort</b><small>${l.acc ? `±${l.acc} m · ` : ""}${esc(fmtDateTime(l.ts))} · in Karten öffnen</small></span></a>`;
+          inner += `<a class="loc" href="${esc(mapsLink(l))}" target="_blank" rel="noopener" aria-label="${T("Standort in Karten-App öffnen")}">${mapHtml(l, 240, 130)}<span class="lt"><b>📍 ${T("Standort")}</b><small>${l.acc ? `±${l.acc} m · ` : ""}${esc(fmtDateTime(l.ts))} · ${T("in Karten öffnen")}</small></span></a>`;
         }
         // Uhrzeit und Haken stehen wie im Messenger unten rechts im Text (wenn danach nichts mehr kommt)
-        if (m.text) inner += `<div class="t">${c.is_group ? this._markMentions(linkify(m.text), c) : linkify(m.text)}${m.buttons?.length ? "" : "\u0000META\u0000"}</div>`;
+        if (m.text) inner += `<div class="t">${c.is_group ? this._markMentions(linkify(sysText(m)), c) : linkify(sysText(m))}${m.buttons?.length ? "" : "\u0000META\u0000"}</div>`;
         if (m.buttons?.length) {
           const ans = m.answer;
           inner += `<div class="qbtns">${m.buttons.map((t, i) => `<button class="qb ${ans && ans.index === i ? "on" : ""}" data-a="press" data-id="${m.id}" data-i="${i}"${m.confirms?.[i] ? ` data-c="${esc(m.confirms[i])}"` : ""} ${ans ? "disabled" : ""}>${esc(t)}</button>`).join("")}</div>`;
-          if (ans) inner += `<div class="ans">Antwort: ${esc(ans.title)} · ${esc(ans.user_id === me ? "Du" : ans.user_name)}, ${esc(fmtDateTime(ans.at))}</div>`;
+          if (ans) inner += `<div class="ans">${T("Antwort")}: ${esc(ans.title)} · ${esc(ans.user_id === me ? T("Du") : ans.user_name)}, ${esc(fmtDateTime(ans.at))}</div>`;
         }
       }
-      const tick = out && !m.deleted ? (read ? `<span class="rd" title="Gelesen">${icon("dcheck", 16)}</span>` : `<span title="Gesendet">${icon("check", 14)}</span>`) : "";
-      const metaInner = `${m.edited_at && !m.deleted ? "bearbeitet · " : ""}${fmtTime(m.created_at)}${tick}`;
+      const tick = out && !m.deleted ? (read ? `<span class="rd" title="${T("Gelesen")}">${icon("dcheck", 16)}</span>` : `<span title="${T("Gesendet")}">${icon("check", 14)}</span>`) : "";
+      const metaInner = `${m.edited_at && !m.deleted ? T("bearbeitet") + " · " : ""}${fmtTime(m.created_at)}${tick}`;
       if (inner.includes("\u0000META\u0000")) inner = inner.replace("\u0000META\u0000", `<span class="meta fl">${metaInner}</span>`);
       else inner += `<div class="meta">${metaInner}</div>`;
       let rx = "";
       if (m.reactions?.length) {
         const counts = {};
         m.reactions.forEach((r) => (counts[r.emoji] = (counts[r.emoji] || 0) + 1));
-        rx = `<button class="rx" data-a="rxinfo" data-id="${m.id}" aria-label="Reaktionen anzeigen">${Object.keys(counts).map((e) => esc(e)).join("")}${m.reactions.length > 1 ? `<span class="c">${m.reactions.length}</span>` : ""}</button>`;
+        rx = `<button class="rx" data-a="rxinfo" data-id="${m.id}" aria-label="${T("Reaktionen anzeigen")}">${Object.keys(counts).map((e) => esc(e)).join("")}${m.reactions.length > 1 ? `<span class="c">${m.reactions.length}</span>` : ""}</button>`;
       }
       return `<div class="${cls}" data-id="${m.id}"><div class="b" data-a="msg">${inner}</div>${rx}</div>`;
     }
@@ -1535,31 +1929,31 @@
 
     // --------------------------------------------------------- Nachrichtenmenü
     _hideMessage(id) {
-      this._confirm("Nur für dich löschen?", "Löschen", () => this._ws({ type: "ha_chat/hide", message_id: id }),
-        "Die Nachricht verschwindet nur bei dir. Alle anderen sehen sie weiterhin.");
+      this._confirm(T("Nur für dich löschen?"), T("Löschen"), () => this._ws({ type: "ha_chat/hide", message_id: id }),
+        T("Die Nachricht verschwindet nur bei dir. Alle anderen sehen sie weiterhin."));
     }
 
     _messageMenu(id) {
       const m = this._findMsg(id);
       if (!m) return;
       if (m.deleted) {
-        this._dialog(`<h3>Gelöschte Nachricht</h3><button class="act" data-x="hide">${icon("eyeoff")}Für mich löschen</button><div class="btns"><button class="btn" data-a="close">Schließen</button></div>`,
+        this._dialog(`<h3>${T("Gelöschte Nachricht")}</h3><button class="act" data-x="hide">${icon("eyeoff")}${T("Für mich löschen")}</button><div class="btns"><button class="btn" data-a="close">${T("Schließen")}</button></div>`,
           (dlg) => dlg.querySelector('[data-x="hide"]').addEventListener("click", () => { this._closeLayer(); this._ws({ type: "ha_chat/hide", message_id: id }).catch(() => {}); }));
         return;
       }
       const me = this._me();
       const mine = m.reactions?.find((r) => r.user_id === me)?.emoji;
       const own = m.sender_id === me;
-      const rx = (this._client.info.reactions || []).map((e) => `<button class="${e === mine ? "on" : ""}" data-r="${esc(e)}" aria-label="Reaktion ${esc(e)}">${esc(e)}</button>`).join("");
+      const rx = (this._client.info.reactions || []).map((e) => `<button class="${e === mine ? "on" : ""}" data-r="${esc(e)}" aria-label="${T("Reaktion")} ${esc(e)}">${esc(e)}</button>`).join("");
       this._dialog(
         `<div class="rxrow">${rx}</div>
-         <button class="act" data-x="reply">${icon("reply")}Antworten</button>
-         <button class="act" data-x="forward">${icon("forward")}Weiterleiten</button>
-         ${m.text ? `<button class="act" data-x="copy">${icon("copy")}Text kopieren</button>` : ""}
-         ${own ? `<button class="act" data-x="info">${icon("info")}Info: gelesen von …</button>` : ""}
-         ${own && m.text ? `<button class="act" data-x="edit">${icon("edit")}Bearbeiten</button>` : ""}
-         <button class="act danger" data-x="hide">${icon("eyeoff")}Für mich löschen</button>
-         ${own ? `<button class="act danger" data-x="delete">${icon("trash")}Für alle löschen</button>` : ""}`,
+         <button class="act" data-x="reply">${icon("reply")}${T("Antworten")}</button>
+         <button class="act" data-x="forward">${icon("forward")}${T("Weiterleiten")}</button>
+         ${m.text ? `<button class="act" data-x="copy">${icon("copy")}${T("Text kopieren")}</button>` : ""}
+         ${own ? `<button class="act" data-x="info">${icon("info")}${T("Info: gelesen von …")}</button>` : ""}
+         ${own && m.text ? `<button class="act" data-x="edit">${icon("edit")}${T("Bearbeiten")}</button>` : ""}
+         <button class="act danger" data-x="hide">${icon("eyeoff")}${T("Für mich löschen")}</button>
+         ${own ? `<button class="act danger" data-x="delete">${icon("trash")}${T("Für alle löschen")}</button>` : ""}`,
         (dlg) => {
           dlg.addEventListener("click", async (e) => {
             const r = e.target.closest("[data-r]");
@@ -1573,7 +1967,7 @@
             if (x === "forward") this._forwardDialog(m);
             if (x === "info") this._readInfo(m);
             if (x === "hide") this._hideMessage(id);
-            if (x === "delete") this._confirm("Nachricht für alle löschen?", "Löschen", () => this._ws({ type: "ha_chat/delete", message_id: id }));
+            if (x === "delete") this._confirm(T("Nachricht für alle löschen?"), T("Löschen"), () => this._ws({ type: "ha_chat/delete", message_id: id }));
           });
         }
       );
@@ -1583,21 +1977,21 @@
       const m = this._findMsg(id);
       if (!m) return;
       const c = this._client.convs.get(this._openId);
-      const name = (uid) => (uid === this._me() ? "Du" : c.members.find((x) => x.user_id === uid)?.name || "Unbekannt");
+      const name = (uid) => (uid === this._me() ? T("Du") : c.members.find((x) => x.user_id === uid)?.name || T("Unbekannt"));
       this._dialog(
-        `<h3>Reaktionen</h3>${m.reactions.map((r) => `<div class="row" style="min-height:36px"><span style="font-size:22px">${esc(r.emoji)}</span><span>${esc(name(r.user_id))}</span></div>`).join("")}
-         <div class="btns"><button class="btn" data-a="close">Schließen</button></div>`
+        `<h3>${T("Reaktionen")}</h3>${m.reactions.map((r) => `<div class="row" style="min-height:36px"><span style="font-size:22px">${esc(r.emoji)}</span><span>${esc(name(r.user_id))}</span></div>`).join("")}
+         <div class="btns"><button class="btn" data-a="close">${T("Schließen")}</button></div>`
       );
     }
 
     _confirm(text, okLabel, action, hint) {
-      this._dialog(`<h3>${esc(text)}</h3>${hint ? `<div class="sub2">${esc(hint)}</div>` : ""}<div class="btns"><button class="btn" data-a="close">Abbrechen</button><button class="btn p" data-ok>${esc(okLabel)}</button></div>`, (dlg) => {
+      this._dialog(`<h3>${esc(text)}</h3>${hint ? `<div class="sub2">${esc(hint)}</div>` : ""}<div class="btns"><button class="btn" data-a="close">${T("Abbrechen")}</button><button class="btn p" data-ok>${esc(okLabel)}</button></div>`, (dlg) => {
         dlg.querySelector("[data-ok]").addEventListener("click", () => { this._closeLayer(); action().catch(() => {}); });
       });
     }
 
     _prompt(title, value, okLabel, action) {
-      this._dialog(`<h3>${esc(title)}</h3><input class="inp" maxlength="60" value="${esc(value)}"><div class="btns"><button class="btn" data-a="close">Abbrechen</button><button class="btn p" data-ok>${esc(okLabel)}</button></div>`, (dlg) => {
+      this._dialog(`<h3>${esc(title)}</h3><input class="inp" maxlength="60" value="${esc(value)}"><div class="btns"><button class="btn" data-a="close">${T("Abbrechen")}</button><button class="btn p" data-ok>${esc(okLabel)}</button></div>`, (dlg) => {
         const inp = dlg.querySelector("input");
         const go = () => { const v = inp.value.trim(); if (!v) return; this._closeLayer(); action(v).catch(() => {}); };
         dlg.querySelector("[data-ok]").addEventListener("click", go);
@@ -1609,14 +2003,14 @@
     // --------------------------------------------------------- Neue Chats & Gruppen
     _userPicker(title, users, okLabel, withName, action) {
       if (!users.length) {
-        this._dialog(`<h3>${esc(title)}</h3><div>Keine weiteren berechtigten Personen vorhanden.</div><div class="btns"><button class="btn" data-a="close">OK</button></div>`);
+        this._dialog(`<h3>${esc(title)}</h3><div>${T("Keine weiteren berechtigten Personen vorhanden.")}</div><div class="btns"><button class="btn" data-a="close">OK</button></div>`);
         return;
       }
       this._dialog(
         `<h3>${esc(title)}</h3>
          <div>${users.map((u) => `<label class="chk"><input type="checkbox" value="${esc(u.id)}">${avatar(u.name, u.picture, u.id, 36)}<span>${esc(u.name)}</span></label>`).join("")}</div>
-         ${withName ? `<input class="inp gname" placeholder="Gruppenname (bei mehreren Personen)" maxlength="60" hidden>` : ""}
-         <div class="btns"><button class="btn" data-a="close">Abbrechen</button><button class="btn p" data-ok disabled>${esc(okLabel)}</button></div>`,
+         ${withName ? `<input class="inp gname" placeholder="${T("Gruppenname (bei mehreren Personen)")}" maxlength="60" hidden>` : ""}
+         <div class="btns"><button class="btn" data-a="close">${T("Abbrechen")}</button><button class="btn p" data-ok disabled>${esc(okLabel)}</button></div>`,
         (dlg) => {
           const ok = dlg.querySelector("[data-ok]");
           const gname = dlg.querySelector(".gname");
@@ -1629,7 +2023,7 @@
           ok.addEventListener("click", () => {
             const ids = sel();
             if (!ids.length) return;
-            if (gname && ids.length > 1 && !gname.value.trim()) { gname.focus(); gname.placeholder = "Bitte Gruppennamen eingeben"; return; }
+            if (gname && ids.length > 1 && !gname.value.trim()) { gname.focus(); gname.placeholder = T("Bitte Gruppennamen eingeben"); return; }
             this._closeLayer();
             action(ids, gname?.value.trim() || null).catch(() => {});
           });
@@ -1639,7 +2033,7 @@
 
     _newChatDialog() {
       const users = (this._client.info.users || []).filter((u) => u.id !== this._me());
-      this._userPicker("Neuer Chat", users, "Chat starten", true, async (ids, name) => {
+      this._userPicker(T("Neuer Chat"), users, T("Chat starten"), true, async (ids, name) => {
         const r = await this._ws({ type: "ha_chat/create", members: ids, name: ids.length > 1 ? name : null });
         await this._client.loadConversations();
         this._open(r.conversation_id);
@@ -1650,29 +2044,29 @@
       const c = this._client.convs.get(this._openId);
       if (!c) return;
       const creator = c.created_by === this._me();
-      const mediaBtn = `<button class="act" data-x="media">${icon("grid")}Medien, Dateien & Links</button>`;
-      const clearBtn = `<button class="act" data-x="clear">${icon("eraser")}Verlauf leeren</button>`;
+      const mediaBtn = `<button class="act" data-x="media">${icon("grid")}${T("Medien, Dateien & Links")}</button>`;
+      const clearBtn = `<button class="act" data-x="clear">${icon("eraser")}${T("Verlauf leeren")}</button>`;
       if (!c.is_group || c.is_system) {
-        this._dialog(`<h3>${esc(c.name)}</h3>${c.is_system ? "" : `<button class="act" data-x="info">${icon("info")}Kontaktinfo</button>`}${mediaBtn}${clearBtn}${c.is_system ? "" : `<button class="act danger" data-x="delete">${icon("trash")}Chat für beide löschen</button>`}<div class="btns"><button class="btn" data-a="close">Schließen</button></div>`, (dlg) => {
+        this._dialog(`<h3>${esc(c.name)}</h3>${c.is_system ? "" : `<button class="act" data-x="info">${icon("info")}${T("Kontaktinfo")}</button>`}${mediaBtn}${clearBtn}${c.is_system ? "" : `<button class="act danger" data-x="delete">${icon("trash")}${T("Chat für beide löschen")}</button>`}<div class="btns"><button class="btn" data-a="close">${T("Schließen")}</button></div>`, (dlg) => {
           dlg.addEventListener("click", (e) => {
             const x = e.target.closest("[data-x]")?.dataset.x;
             if (x === "info") this._convInfo(c.id);
             if (x === "media") this._mediaPanel(c.id);
             if (x === "clear") this._clearHistory(c);
-            if (x === "delete") this._confirm("Chat und alle Nachrichten löschen?", "Löschen", () => this._ws({ type: "ha_chat/delete_conversation", conversation_id: c.id }), "Der Chat wird für euch beide gelöscht.");
+            if (x === "delete") this._confirm(T("Chat und alle Nachrichten löschen?"), T("Löschen"), () => this._ws({ type: "ha_chat/delete_conversation", conversation_id: c.id }), T("Der Chat wird für euch beide gelöscht."));
           });
         });
         return;
       }
       this._dialog(
         `<h3>${esc(c.name)}</h3>
-         <button class="act" data-x="ginfo">${icon("info")}Gruppeninfo: Bild, Name & Beschreibung</button>
+         <button class="act" data-x="ginfo">${icon("info")}${T("Gruppeninfo: Bild, Name & Beschreibung")}</button>
          ${mediaBtn}
-         <button class="act" data-x="members">${icon("people")}Mitglieder (${c.members.length})</button>
-         <button class="act" data-x="add">${icon("plus")}Mitglieder hinzufügen</button>
+         <button class="act" data-x="members">${icon("people")}${T("Mitglieder ({n})", { n: c.members.length })}</button>
+         <button class="act" data-x="add">${icon("plus")}${T("Mitglieder hinzufügen")}</button>
          ${clearBtn}
-         <button class="act danger" data-x="leave">${icon("leave")}Gruppe verlassen</button>
-         ${creator ? `<button class="act danger" data-x="delete">${icon("trash")}Gruppe löschen</button>` : ""}`,
+         <button class="act danger" data-x="leave">${icon("leave")}${T("Gruppe verlassen")}</button>
+         ${creator ? `<button class="act danger" data-x="delete">${icon("trash")}${T("Gruppe löschen")}</button>` : ""}`,
         (dlg) => dlg.addEventListener("click", (e) => {
           const x = e.target.closest("[data-x]")?.dataset.x;
           if (!x) return;
@@ -1681,12 +2075,12 @@
           if (x === "add") {
             const ids = c.members.map((m) => m.user_id);
             const users = (this._client.info.users || []).filter((u) => !ids.includes(u.id));
-            this._userPicker("Mitglieder hinzufügen", users, "Hinzufügen", false, (sel) => this._ws({ type: "ha_chat/update_group", conversation_id: c.id, add: sel }));
+            this._userPicker(T("Mitglieder hinzufügen"), users, T("Hinzufügen"), false, (sel) => this._ws({ type: "ha_chat/update_group", conversation_id: c.id, add: sel }));
           }
           if (x === "members") this._membersDialog(c, creator);
           if (x === "media") this._mediaPanel(c.id);
-          if (x === "leave") this._confirm("Gruppe verlassen?", "Verlassen", () => this._ws({ type: "ha_chat/leave", conversation_id: c.id }));
-          if (x === "delete") this._confirm("Gruppe für alle löschen?", "Löschen", () => this._ws({ type: "ha_chat/delete_conversation", conversation_id: c.id }));
+          if (x === "leave") this._confirm(T("Gruppe verlassen?"), T("Verlassen"), () => this._ws({ type: "ha_chat/leave", conversation_id: c.id }));
+          if (x === "delete") this._confirm(T("Gruppe für alle löschen?"), T("Löschen"), () => this._ws({ type: "ha_chat/delete_conversation", conversation_id: c.id }));
         })
       );
     }
@@ -1694,12 +2088,12 @@
     _membersDialog(c, creator) {
       const me = this._me();
       this._dialog(
-        `<h3>Mitglieder</h3>${c.members.map((m) => {
+        `<h3>${T("Mitglieder")}</h3>${c.members.map((m) => {
           const stt = m.user_id === me ? null : this._statusText(m.user_id);
-          return `<div class="row" style="min-height:48px">${withDot(avatar(m.name, m.picture, m.user_id, 36), stt?.on)}<span style="flex:1;display:flex;flex-direction:column"><span>${esc(m.user_id === me ? "Du" : m.name)}${m.user_id === c.created_by ? " · Ersteller" : ""}</span>${stt ? `<span class="mst ${stt.on ? "on" : ""}">${esc(stt.text)}</span>` : ""}</span>
-          ${creator && m.user_id !== me ? `<button class="ib" data-rm="${esc(m.user_id)}" aria-label="${esc(m.name)} entfernen">${icon("close", 18)}</button>` : ""}</div>`;
+          return `<div class="row" style="min-height:48px">${withDot(avatar(m.name, m.picture, m.user_id, 36), stt?.on)}<span style="flex:1;display:flex;flex-direction:column"><span>${esc(m.user_id === me ? T("Du") : m.name)}${m.user_id === c.created_by ? " · " + T("Ersteller") : ""}</span>${stt ? `<span class="mst ${stt.on ? "on" : ""}">${esc(stt.text)}</span>` : ""}</span>
+          ${creator && m.user_id !== me ? `<button class="ib" data-rm="${esc(m.user_id)}" aria-label="${esc(T("{name} entfernen", { name: m.name }))}">${icon("close", 18)}</button>` : ""}</div>`;
         }).join("")}
-         <div class="btns"><button class="btn" data-a="close">Schließen</button></div>`,
+         <div class="btns"><button class="btn" data-a="close">${T("Schließen")}</button></div>`,
         (dlg) => dlg.addEventListener("click", (e) => {
           const rm = e.target.closest("[data-rm]")?.dataset.rm;
           if (rm) { this._closeLayer(); this._ws({ type: "ha_chat/update_group", conversation_id: c.id, remove: [rm] }).catch(() => {}); }
@@ -1708,9 +2102,9 @@
     }
 
     _clearHistory(c) {
-      this._confirm(`Verlauf von „${c.name}“ leeren?`, "Leeren",
+      this._confirm(T("Verlauf von „{name}“ leeren?", { name: c.name }), T("Leeren"),
         () => this._ws({ type: "ha_chat/clear_history", conversation_id: c.id }),
-        "Alle bisherigen Nachrichten verschwinden nur bei dir. Die anderen sehen sie weiterhin, neue Nachrichten kommen ganz normal an.");
+        T("Alle bisherigen Nachrichten verschwinden nur bei dir. Die anderen sehen sie weiterhin, neue Nachrichten kommen ganz normal an."));
     }
 
     _convInfo(convId) {
@@ -1720,19 +2114,19 @@
       if (c.is_system) {
         this._dialog(`<div class="prof gi">${avatar(c.name, null, "c" + c.id, 96, true)}<h3>${esc(c.name)}</h3>
             <div class="hint">${c.personal
-              ? "Dein persönlicher Kanal: Hier schickt Home Assistant Meldungen aus Automationen, die nur für dich bestimmt sind. Niemand sonst sieht diesen Chat."
-              : `Gemeinsamer Kanal aller ${c.members.length} Chat-Benutzer. Hier schreibt auch Home Assistant selbst (z. B. Meldungen aus Automationen).`}</div></div>
-          <button class="act" data-x="media">${icon("grid")}Medien, Dateien & Links</button>
-          <div class="btns"><button class="btn" data-a="close">Schließen</button></div>`,
+              ? T("Dein persönlicher Kanal: Hier schickt Home Assistant Meldungen aus Automationen, die nur für dich bestimmt sind. Niemand sonst sieht diesen Chat.")
+              : T("Gemeinsamer Kanal aller {n} Chat-Benutzer. Hier schreibt auch Home Assistant selbst (z. B. Meldungen aus Automationen).", { n: c.members.length })}</div></div>
+          <button class="act" data-x="media">${icon("grid")}${T("Medien, Dateien & Links")}</button>
+          <div class="btns"><button class="btn" data-a="close">${T("Schließen")}</button></div>`,
           (dlg) => dlg.querySelector('[data-x="media"]').addEventListener("click", () => this._mediaPanel(c.id)));
         return;
       }
       const stt = c.other_id && c.other_id !== this._me() ? this._statusText(c.other_id) : null;
       this._dialog(`<div class="prof gi">${withDot(avatar(c.name, c.picture, "c" + c.id, 112), stt?.on)}<h3>${esc(c.name)}</h3>
-          <div class="st ${stt?.on ? "on" : ""}">${esc(stt ? stt.text : "Direktnachricht")}</div></div>
-        <button class="act" data-x="media">${icon("grid")}Medien, Dateien & Links</button>
-        <button class="act" data-x="search">${icon("search")}In diesem Chat suchen</button>
-        <div class="btns"><button class="btn" data-a="close">Schließen</button></div>`,
+          <div class="st ${stt?.on ? "on" : ""}">${esc(stt ? stt.text : T("Direktnachricht"))}</div></div>
+        <button class="act" data-x="media">${icon("grid")}${T("Medien, Dateien & Links")}</button>
+        <button class="act" data-x="search">${icon("search")}${T("In diesem Chat suchen")}</button>
+        <div class="btns"><button class="btn" data-a="close">${T("Schließen")}</button></div>`,
         (dlg) => dlg.addEventListener("click", (e) => {
           const x = e.target.closest("[data-x]")?.dataset.x;
           if (x === "media") this._mediaPanel(c.id);
@@ -1747,16 +2141,16 @@
         `<div class="prof gi">
            ${avatar(c.name, c.picture, "c" + c.id, 112)}
            <h3>${esc(c.name)}</h3>
-           <div class="hint">Gruppe · ${c.members.length} Mitglieder</div>
-           <div class="desc ${c.description ? "" : "none"}">${c.description ? linkify(c.description) : "Noch keine Gruppenbeschreibung"}</div>
+           <div class="hint">${T("Gruppe · {n} Mitglieder", { n: c.members.length })}</div>
+           <div class="desc ${c.description ? "" : "none"}">${c.description ? linkify(c.description) : T("Noch keine Gruppenbeschreibung")}</div>
          </div>
-         <button class="act" data-x="pic">${icon("camera")}${c.has_picture ? "Gruppenbild ändern" : "Gruppenbild festlegen"}</button>
-         ${c.has_picture ? `<button class="act danger" data-x="rmpic">${icon("trash")}Gruppenbild entfernen</button>` : ""}
-         <button class="act" data-x="desc">${icon("edit")}${c.description ? "Beschreibung bearbeiten" : "Beschreibung hinzufügen"}</button>
-         <button class="act" data-x="rename">${icon("rename")}Gruppe umbenennen</button>
-         <button class="act" data-x="members">${icon("people")}Mitglieder (${c.members.length})</button>
+         <button class="act" data-x="pic">${icon("camera")}${c.has_picture ? T("Gruppenbild ändern") : T("Gruppenbild festlegen")}</button>
+         ${c.has_picture ? `<button class="act danger" data-x="rmpic">${icon("trash")}${T("Gruppenbild entfernen")}</button>` : ""}
+         <button class="act" data-x="desc">${icon("edit")}${c.description ? T("Beschreibung bearbeiten") : T("Beschreibung hinzufügen")}</button>
+         <button class="act" data-x="rename">${icon("rename")}${T("Gruppe umbenennen")}</button>
+         <button class="act" data-x="members">${icon("people")}${T("Mitglieder ({n})", { n: c.members.length })}</button>
          <input type="file" accept="image/*" hidden>
-         <div class="btns"><button class="btn" data-a="close">Schließen</button></div>`,
+         <div class="btns"><button class="btn" data-a="close">${T("Schließen")}</button></div>`,
         (dlg) => {
           const inp = dlg.querySelector("input[type=file]");
           dlg.addEventListener("click", (e) => {
@@ -1764,7 +2158,7 @@
             if (x === "pic") inp.click();
             if (x === "rmpic") { this._closeLayer(); this._ws({ type: "ha_chat/remove_group_avatar", conversation_id: c.id }).catch(() => {}); }
             if (x === "desc") this._descDialog(c);
-            if (x === "rename") this._prompt("Gruppe umbenennen", c.name, "Speichern", (v) => this._ws({ type: "ha_chat/update_group", conversation_id: c.id, name: v }));
+            if (x === "rename") this._prompt(T("Gruppe umbenennen"), c.name, T("Speichern"), (v) => this._ws({ type: "ha_chat/update_group", conversation_id: c.id, name: v }));
             if (x === "members") this._membersDialog(c, c.created_by === this._me());
           });
           inp.addEventListener("change", async () => {
@@ -1774,7 +2168,7 @@
               const image = await this._squareJpeg(file, 256);
               this._closeLayer();
               await this._ws({ type: "ha_chat/set_group_avatar", conversation_id: c.id, image });
-              this._toast("Gruppenbild gespeichert");
+              this._toast(T("Gruppenbild gespeichert"));
             } catch (err) {
               this._error(err);
             }
@@ -1786,10 +2180,10 @@
     _descDialog(c) {
       const max = 500;
       this._dialog(
-        `<h3>Gruppenbeschreibung</h3>
-         <textarea class="inp" maxlength="${max}" placeholder="Worum geht es in dieser Gruppe? (für alle Mitglieder sichtbar)">${esc(c.description || "")}</textarea>
+        `<h3>${T("Gruppenbeschreibung")}</h3>
+         <textarea class="inp" maxlength="${max}" placeholder="${T("Worum geht es in dieser Gruppe? (für alle Mitglieder sichtbar)")}">${esc(c.description || "")}</textarea>
          <div class="cnt"></div>
-         <div class="btns"><button class="btn" data-a="close">Abbrechen</button><button class="btn p" data-ok>Speichern</button></div>`,
+         <div class="btns"><button class="btn" data-a="close">${T("Abbrechen")}</button><button class="btn p" data-ok>${T("Speichern")}</button></div>`,
         (dlg) => {
           const ta = dlg.querySelector("textarea");
           const cnt = dlg.querySelector(".cnt");
@@ -1801,7 +2195,7 @@
             const v = ta.value.trim();
             this._closeLayer();
             this._ws({ type: "ha_chat/update_group", conversation_id: c.id, description: v })
-              .then(() => this._toast(v ? "Beschreibung gespeichert" : "Beschreibung entfernt")).catch(() => {});
+              .then(() => this._toast(v ? T("Beschreibung gespeichert") : T("Beschreibung entfernt"))).catch(() => {});
           });
         }
       );
@@ -1810,13 +2204,13 @@
     // --------------------------------------------------------- Suche
     _searchPanel(convId, initial) {
       const conv = convId ? this._client.convs.get(convId) : null;
-      this.$layer.innerHTML = `<div class="sp" role="dialog" aria-modal="true" aria-label="Nachrichten durchsuchen">
+      this.$layer.innerHTML = `<div class="sp" role="dialog" aria-modal="true" aria-label="${T("Nachrichten durchsuchen")}">
         <div class="bar2">
-          <button class="ib" data-a="close" aria-label="Suche schließen">${icon("back")}</button>
-          <label>${icon("search", 18)}<input type="search" placeholder="Nachrichten durchsuchen" aria-label="Suchbegriff" maxlength="100"></label>
+          <button class="ib" data-a="close" aria-label="${T("Suche schließen")}">${icon("back")}</button>
+          <label>${icon("search", 18)}<input type="search" placeholder="${T("Nachrichten durchsuchen")}" aria-label="${T("Suchbegriff")}" maxlength="100"></label>
         </div>
-        ${conv ? `<div class="scope"><button class="chipb on" data-scope="${conv.id}">In „${esc(conv.name)}“</button><button class="chipb" data-scope="">In allen Chats</button></div>` : ""}
-        <div class="res" role="list"><div class="note">Mindestens 2 Zeichen eingeben. Gesucht wird in Texten und Dateinamen.</div></div>
+        ${conv ? `<div class="scope"><button class="chipb on" data-scope="${conv.id}">${T("In „{name}“", { name: esc(conv.name) })}</button><button class="chipb" data-scope="">${T("In allen Chats")}</button></div>` : ""}
+        <div class="res" role="list"><div class="note">${T("Mindestens 2 Zeichen eingeben. Gesucht wird in Texten und Dateinamen.")}</div></div>
       </div>`;
       const sp = this.$layer.firstElementChild;
       const inp = sp.querySelector("input");
@@ -1828,30 +2222,30 @@
         const q = inp.value.trim();
         const my = ++seq;
         if (q.length < 2) {
-          res.innerHTML = `<div class="note">Mindestens 2 Zeichen eingeben. Gesucht wird in Texten und Dateinamen.</div>`;
+          res.innerHTML = `<div class="note">${T("Mindestens 2 Zeichen eingeben. Gesucht wird in Texten und Dateinamen.")}</div>`;
           return;
         }
-        res.innerHTML = `<div class="note">Suche …</div>`;
+        res.innerHTML = `<div class="note">${T("Suche …")}</div>`;
         try {
           const hits = await this._client.ws({ type: "ha_chat/search", query: q, conversation_id: scope, limit: 80 });
           if (my !== seq) return;
           if (!hits.length) {
-            res.innerHTML = `<div class="note">Keine Nachrichten mit „${esc(q)}“ gefunden.</div>`;
+            res.innerHTML = `<div class="note">${T("Keine Nachrichten mit „{q}“ gefunden.", { q: esc(q) })}</div>`;
             return;
           }
           const me = this._me();
           res.innerHTML = hits.map((h) => {
-            const who = h.sender_id === me ? "Du" : h.sender_name;
+            const who = h.sender_id === me ? T("Du") : h.sender_name;
             const body = h.text || (h.attachment ? `${attLabel(h.attachment.mime)}: ${h.attachment.filename}` : "");
             const d = new Date(h.created_at * 1000);
-            const when = d.toDateString() === new Date().toDateString() ? fmtTime(h.created_at) : d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit" });
+            const when = d.toDateString() === new Date().toDateString() ? fmtTime(h.created_at) : d.toLocaleDateString(I18N.locale, { day: "2-digit", month: "2-digit", year: "2-digit" });
             return `<button class="hit" data-conv="${h.conversation_id}" data-msg="${h.id}" role="listitem">
               ${avatar(h.conversation_name, h.conversation_picture, "c" + h.conversation_id, 40, h.conversation_is_system)}
               <span class="txt"><span class="row"><span class="name">${esc(h.conversation_name)}</span><span class="time">${esc(when)}</span></span>
               <span class="snip">${esc(who)}: ${highlight(body, q)}</span></span></button>`;
-          }).join("") + (hits.length >= 80 ? `<div class="note">Es werden die 80 neuesten Treffer angezeigt – Suchbegriff genauer fassen.</div>` : "");
+          }).join("") + (hits.length >= 80 ? `<div class="note">${T("Es werden die 80 neuesten Treffer angezeigt – Suchbegriff genauer fassen.")}</div>` : "");
         } catch (e) {
-          if (my === seq) res.innerHTML = `<div class="note">${esc(e?.message || "Suche fehlgeschlagen")}</div>`;
+          if (my === seq) res.innerHTML = `<div class="note">${esc(e?.message || T("Suche fehlgeschlagen"))}</div>`;
         }
       };
       inp.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(run, 250); });
@@ -1904,15 +2298,15 @@
         `<div class="prof">
            ${avatar(me.name, me.picture, me.id, 112)}
            <h3>${esc(me.name)}</h3>
-           <div class="hint">Der Name ist dein Anzeigename aus deinem Home-Assistant-Profil (unten links auf deinen Namen tippen).</div>
+           <div class="hint">${T("Der Name ist dein Anzeigename aus deinem Home-Assistant-Profil (unten links auf deinen Namen tippen).")}</div>
          </div>
-         <button class="act" data-x="pick">${icon("camera")}${me.has_avatar ? "Profilbild ändern" : "Profilbild festlegen"}</button>
-         ${me.has_avatar ? `<button class="act danger" data-x="remove">${icon("trash")}Profilbild entfernen</button>` : ""}
-         <label class="tog"><input type="checkbox" data-pres ${this._client.info.show_presence !== false ? "checked" : ""}><span>Online-Status zeigen<small>Andere sehen, ob du gerade online bist und wann du zuletzt online warst. Schaltest du das aus, siehst du auch den Status der anderen nicht.</small></span></label>
-         <button class="act" data-x="test">${icon("bell")}Erreichbarkeit testen</button>
-         ${this._client.info.is_admin ? `<button class="act" data-x="admin">${icon("db")}Speicher & Geräte (Admin)</button>` : ""}
+         <button class="act" data-x="pick">${icon("camera")}${me.has_avatar ? T("Profilbild ändern") : T("Profilbild festlegen")}</button>
+         ${me.has_avatar ? `<button class="act danger" data-x="remove">${icon("trash")}${T("Profilbild entfernen")}</button>` : ""}
+         <label class="tog"><input type="checkbox" data-pres ${this._client.info.show_presence !== false ? "checked" : ""}><span>${T("Online-Status zeigen")}<small>${T("Andere sehen, ob du gerade online bist und wann du zuletzt online warst. Schaltest du das aus, siehst du auch den Status der anderen nicht.")}</small></span></label>
+         <button class="act" data-x="test">${icon("bell")}${T("Erreichbarkeit testen")}</button>
+         ${this._client.info.is_admin ? `<button class="act" data-x="admin">${icon("db")}${T("Speicher & Geräte (Admin)")}</button>` : ""}
          <input type="file" accept="image/*" hidden>
-         <div class="btns"><button class="btn" data-a="close">Schließen</button></div>`,
+         <div class="btns"><button class="btn" data-a="close">${T("Schließen")}</button></div>`,
         (dlg) => {
           const inp = dlg.querySelector("input[type=file]");
           dlg.addEventListener("click", (e) => {
@@ -1925,7 +2319,7 @@
           dlg.querySelector("[data-pres]").addEventListener("change", (e) => {
             const show = e.target.checked;
             this._ws({ type: "ha_chat/set_presence", show })
-              .then(() => this._toast(show ? "Online-Status wird angezeigt" : "Online-Status ist verborgen"))
+              .then(() => this._toast(show ? T("Online-Status wird angezeigt") : T("Online-Status ist verborgen")))
               .catch(() => { e.target.checked = !show; });
           });
           inp.addEventListener("change", async () => {
@@ -1945,22 +2339,25 @@
 
     // --------------------------------------------------------- Erreichbarkeit
     _tipsHtml(open) {
-      const ios = `<b>iPhone / iPad</b><ul class="tips">
-          <li>Einstellungen → Mitteilungen → Home Assistant: „Mitteilungen erlauben“, Sperrbildschirm, Banner und Töne einschalten.</li>
-          <li>Dort „Zeitkritische Mitteilungen“ erlauben – nötig, damit Nachrichten mit <b>höchster Priorität</b> auch im Fokus- bzw. „Nicht stören“-Modus durchkommen.</li>
-          <li>Fokus-Modi (Einstellungen → Fokus): bei Home Assistant „Zeitkritische Mitteilungen“ zulassen. Normale Chat-Nachrichten halten sich an den Fokus.</li>
-          <li>Die App darf im Hintergrund bleiben; Wegwischen schadet nicht – die Push kommt von Apple.</li></ul>`;
-      const android = `<b>Android</b><ul class="tips">
-          <li>Einstellungen → Apps → Home Assistant → Benachrichtigungen: erlauben; Kategorie „Chat“ auf „Ton und Pop-up“.</li>
-          <li>Kategorie „Chat – Wichtig“ (erscheint nach der ersten Nachricht mit höchster Priorität): „Nicht stören ignorieren“ erlauben.</li>
-          <li>Akku: „Nicht eingeschränkt“ bzw. Akku-Optimierung für Home Assistant ausschalten.</li>
-          <li>„App-Aktivität pausieren, wenn nicht verwendet“ ausschalten.</li>
-          <li>Die App nie mit „Beenden erzwingen“ stoppen – danach kommen keine Pushs, bis sie wieder geöffnet wurde.</li>
-          <li>Xiaomi, Huawei, Honor, Oppo, teils Samsung: „Autostart“ erlauben und die App von „Schlafende Apps“ ausnehmen.</li>
-          <li>Version ohne Google-Dienste (F-Droid): Companion App → Server → „Dauerhafte Verbindung“ auf „Immer“.</li></ul>`;
+      const li = (list) => list.map((s) => `<li>${T(s)}</li>`).join("");
+      const ios = `<b>iPhone / iPad</b><ul class="tips">${li([
+        "Einstellungen → Mitteilungen → Home Assistant: „Mitteilungen erlauben“, Sperrbildschirm, Banner und Töne einschalten.",
+        "Dort „Zeitkritische Mitteilungen“ erlauben – nötig, damit Nachrichten mit <b>höchster Priorität</b> auch im Fokus- bzw. „Nicht stören“-Modus durchkommen.",
+        "Fokus-Modi (Einstellungen → Fokus): bei Home Assistant „Zeitkritische Mitteilungen“ zulassen. Normale Chat-Nachrichten halten sich an den Fokus.",
+        "Die App darf im Hintergrund bleiben; Wegwischen schadet nicht – die Push kommt von Apple.",
+      ])}</ul>`;
+      const android = `<b>Android</b><ul class="tips">${li([
+        "Einstellungen → Apps → Home Assistant → Benachrichtigungen: erlauben; Kategorie „Chat“ auf „Ton und Pop-up“.",
+        "Kategorie „Chat – Wichtig“ (erscheint nach der ersten Nachricht mit höchster Priorität): „Nicht stören ignorieren“ erlauben.",
+        "Akku: „Nicht eingeschränkt“ bzw. Akku-Optimierung für Home Assistant ausschalten.",
+        "„App-Aktivität pausieren, wenn nicht verwendet“ ausschalten.",
+        "Die App nie mit „Beenden erzwingen“ stoppen – danach kommen keine Pushs, bis sie wieder geöffnet wurde.",
+        "Xiaomi, Huawei, Honor, Oppo, teils Samsung: „Autostart“ erlauben und die App von „Schlafende Apps“ ausnehmen.",
+        "Version ohne Google-Dienste (F-Droid): Companion App → Server → „Dauerhafte Verbindung“ auf „Immer“.",
+      ])}</ul>`;
       const order = devicePlatform() === "android" ? android + ios : ios + android;
-      return `<details class="tipbox" ${open ? "open" : ""}><summary>Tipps, falls keine Benachrichtigung ankommt</summary>${order}
-        <div class="sub2" style="margin-top:4px">Zum Empfangen braucht das Handy keine Verbindung nach Hause – Home Assistant selbst muss aber Internet haben. Zum Antworten aus der Benachrichtigung unterwegs ist Fernzugriff nötig (z. B. Home Assistant Cloud).</div></details>`;
+      return `<details class="tipbox" ${open ? "open" : ""}><summary>${T("Tipps, falls keine Benachrichtigung ankommt")}</summary>${order}
+        <div class="sub2" style="margin-top:4px">${T("Zum Empfangen braucht das Handy keine Verbindung nach Hause – Home Assistant selbst muss aber Internet haben. Zum Antworten aus der Benachrichtigung unterwegs ist Fernzugriff nötig (z. B. Home Assistant Cloud).")}</div></details>`;
     }
 
     async _testPush() {
@@ -1968,14 +2365,14 @@
       try { r = await this._ws({ type: "ha_chat/test_push" }); } catch (e) { return; }
       const ready = r.devices.filter((d) => d.service);
       const rows = r.devices.map((d) => `<div class="dev">${icon("phone", 16)}<b style="font-weight:500">${esc(d.name)}</b>${d.os ? `<span class="time">${esc(d.os)}</span>` : ""}
-        ${d.service ? `<span class="ok">· Push bereit</span>` : `<span class="bad">· ${d.push ? "Benachrichtigungsdienst fehlt (Home Assistant neu starten)" : "Push nicht eingerichtet"}</span>`}</div>`).join("");
+        ${d.service ? `<span class="ok">· ${T("Push bereit")}</span>` : `<span class="bad">· ${d.push ? T("Benachrichtigungsdienst fehlt (Home Assistant neu starten)") : T("Push nicht eingerichtet")}</span>`}</div>`).join("");
       let head;
-      if (!r.devices.length) head = `<div class="warn">Für deinen Benutzer ist kein Smartphone mit der <b>Home Assistant Companion App</b> angemeldet. Installiere die App und melde dich mit deinem Benutzer an – dann bekommst du Chat-Nachrichten als Push.</div>`;
-      else if (!ready.length) head = `<div class="warn">Deine Geräte können zurzeit keine Push empfangen. Öffne die Companion App einmal, erlaube Benachrichtigungen und starte Home Assistant ggf. neu.</div>`;
-      else head = `<div class="warn" style="background:color-mix(in srgb,#43a047 14%,var(--hc-bg))"><b>In ${r.delay} Sekunden</b> kommt eine Test-Benachrichtigung auf ${ready.length === 1 ? "dein Gerät" : `${ready.length} Geräte`}. Sperre jetzt das Display oder wechsle in eine andere App – so prüfst du, ob Nachrichten auch bei geschlossener App ankommen.</div>`;
-      const target = ready.length && r.link ? `<div class="sub2">Tippst du die Benachrichtigung an, öffnet sich <b>${esc(r.link)}</b> – dort, wo du die Chat-Karte benutzt.</div>` : "";
-      this._dialog(`<h3>Erreichbarkeit testen</h3>${head}${rows}${target}${this._tipsHtml(!ready.length)}
-        <div class="btns"><button class="btn" data-a="close">Schließen</button></div>`);
+      if (!r.devices.length) head = `<div class="warn">${T("Für deinen Benutzer ist kein Smartphone mit der <b>Home Assistant Companion App</b> angemeldet. Installiere die App und melde dich mit deinem Benutzer an – dann bekommst du Chat-Nachrichten als Push.")}</div>`;
+      else if (!ready.length) head = `<div class="warn">${T("Deine Geräte können zurzeit keine Push empfangen. Öffne die Companion App einmal, erlaube Benachrichtigungen und starte Home Assistant ggf. neu.")}</div>`;
+      else head = `<div class="warn" style="background:color-mix(in srgb,#43a047 14%,var(--hc-bg))">${ready.length === 1 ? T("<b>In {s} Sekunden</b> kommt eine Test-Benachrichtigung auf dein Gerät.", { s: r.delay }) : T("<b>In {s} Sekunden</b> kommt eine Test-Benachrichtigung auf {n} Geräte.", { s: r.delay, n: ready.length })} ${T("Sperre jetzt das Display oder wechsle in eine andere App – so prüfst du, ob Nachrichten auch bei geschlossener App ankommen.")}</div>`;
+      const target = ready.length && r.link ? `<div class="sub2">${T("Tippst du die Benachrichtigung an, öffnet sich <b>{link}</b> – dort, wo du die Chat-Karte benutzt.", { link: esc(r.link) })}</div>` : "";
+      this._dialog(`<h3>${T("Erreichbarkeit testen")}</h3>${head}${rows}${target}${this._tipsHtml(!ready.length)}
+        <div class="btns"><button class="btn" data-a="close">${T("Schließen")}</button></div>`);
     }
 
     // Bestätigung innerhalb eines Vollbild-Panels (ohne das Panel zu schließen)
@@ -1984,7 +2381,7 @@
         const ov = document.createElement("div");
         ov.className = "ov";
         ov.innerHTML = `<div class="dlg" role="alertdialog" aria-modal="true"><h3>${esc(text)}</h3>${hint ? `<div class="sub2">${esc(hint)}</div>` : ""}
-          <div class="btns"><button class="btn" data-no>Abbrechen</button><button class="btn p" data-yes>${esc(okLabel)}</button></div></div>`;
+          <div class="btns"><button class="btn" data-no>${T("Abbrechen")}</button><button class="btn p" data-yes>${esc(okLabel)}</button></div></div>`;
         const done = (v) => { ov.remove(); resolve(v); };
         ov.addEventListener("click", (e) => {
           if (e.target === ov || e.target.closest("[data-no]")) done(false);
@@ -1998,66 +2395,66 @@
 
     // --------------------------------------------------------- Speicher & Geräte (Administratoren)
     _adminPanel(tab) {
-      this.$layer.innerHTML = `<div class="sp adm" role="dialog" aria-modal="true" aria-label="Speicher und Geräte">
-        <div class="bar2"><button class="ib" data-a="close" aria-label="Schließen">${icon("back")}</button>
-          <span class="ctitle"><span class="n">Speicher & Geräte</span><span class="s">Nur für Administratoren</span></span></div>
-        <div class="scope"><button class="chipb" data-tab="storage">Speicher</button><button class="chipb" data-tab="devices">Erreichbarkeit</button></div>
-        <div class="res"><div class="note">Lade …</div></div></div>`;
+      this.$layer.innerHTML = `<div class="sp adm" role="dialog" aria-modal="true" aria-label="${T("Speicher & Geräte")}">
+        <div class="bar2"><button class="ib" data-a="close" aria-label="${T("Schließen")}">${icon("back")}</button>
+          <span class="ctitle"><span class="n">${T("Speicher & Geräte")}</span><span class="s">${T("Nur für Administratoren")}</span></span></div>
+        <div class="scope"><button class="chipb" data-tab="storage">${T("Speicher")}</button><button class="chipb" data-tab="devices">${T("Erreichbarkeit")}</button></div>
+        <div class="res"><div class="note">${T("Lade …")}</div></div></div>`;
       const sp = this.$layer.firstElementChild;
       const res = sp.querySelector(".res");
       sp.querySelector('[data-a="close"]').focus();
       let data = null;
-      const KIND = { home: "Kanal", group: "Gruppe", direct: "Direktchat" };
+      const KIND = { home: T("Kanal"), group: T("Gruppe"), direct: T("Direktchat") };
       const drawStorage = () => {
         const t = data.totals;
         const files = Math.max(0, t.media_bytes - t.avatar_bytes);
         let html = `<div class="tot">
-            <div class="tile"><b>${fmtBytes(t.total_bytes)}</b><span>Gesamt</span></div>
-            <div class="tile"><b>${fmtBytes(files)}</b><span>Bilder, Videos & Dateien</span></div>
-            <div class="tile"><b>${fmtBytes(t.db_bytes)}</b><span>Nachrichten (Datenbank)</span></div>
-            <div class="tile"><b>${fmtBytes(t.avatar_bytes)}</b><span>Profil- & Gruppenbilder</span></div></div>
-          <div class="sec">Nachrichten werden automatisch nach ${data.retention_days} Tagen gelöscht (änderbar unter Einstellungen → Geräte & Dienste → HA Chat → Konfigurieren).</div>`;
-        if (t.orphan_files) html += `<div class="sec"><span class="bad">${t.orphan_files} verwaiste ${t.orphan_files === 1 ? "Datei" : "Dateien"} (${fmtBytes(t.orphan_bytes)})</span> – gehören zu keiner Nachricht mehr. <button class="chipb" data-act="orphans">Entfernen</button></div>`;
-        html += `<div class="sec">Ältere Nachrichten in allen Chats löschen: älter als
-            <select data-days aria-label="Alter in Tagen">${[7, 14, 30, 60, 90, 180, 365].map((d) => `<option value="${d}" ${d === 30 ? "selected" : ""}>${d} Tage</option>`).join("")}</select>
-            <button class="chipb danger" data-act="older_than">Löschen</button></div>
-          <h4>Platzbedarf je Chat</h4>`;
+            <div class="tile"><b>${fmtBytes(t.total_bytes)}</b><span>${T("Gesamt")}</span></div>
+            <div class="tile"><b>${fmtBytes(files)}</b><span>${T("Bilder, Videos & Dateien")}</span></div>
+            <div class="tile"><b>${fmtBytes(t.db_bytes)}</b><span>${T("Nachrichten (Datenbank)")}</span></div>
+            <div class="tile"><b>${fmtBytes(t.avatar_bytes)}</b><span>${T("Profil- & Gruppenbilder")}</span></div></div>
+          <div class="sec">${T("Nachrichten werden automatisch nach {n} Tagen gelöscht (änderbar unter Einstellungen → Geräte & Dienste → HA Chat → Konfigurieren).", { n: data.retention_days })}</div>`;
+        if (t.orphan_files) html += `<div class="sec"><span class="bad">${t.orphan_files === 1 ? T("1 verwaiste Datei") : T("{n} verwaiste Dateien", { n: t.orphan_files })} (${fmtBytes(t.orphan_bytes)})</span> – ${T("gehören zu keiner Nachricht mehr.")} <button class="chipb" data-act="orphans">${T("Entfernen")}</button></div>`;
+        html += `<div class="sec">${T("Ältere Nachrichten in allen Chats löschen: älter als")}
+            <select data-days aria-label="${T("Alter in Tagen")}">${[7, 14, 30, 60, 90, 180, 365].map((d) => `<option value="${d}" ${d === 30 ? "selected" : ""}>${T("{n} Tage", { n: d })}</option>`).join("")}</select>
+            <button class="chipb danger" data-act="older_than">${T("Löschen")}</button></div>
+          <h4>${T("Platzbedarf je Chat")}</h4>`;
         html += data.conversations.map((c) => `<div class="crow">${avatar(c.name, null, "c" + c.id, 40, c.kind === "home")}
             <span class="txt"><span class="row"><span class="name">${esc(c.name)}</span><span class="time">${esc(KIND[c.kind])}</span></span>
-              <span class="snip">${c.messages} ${c.messages === 1 ? "Nachricht" : "Nachrichten"} · ${c.attachments} ${c.attachments === 1 ? "Anhang" : "Anhänge"} · <b style="font-weight:500;color:var(--hc-text)">${fmtBytes(c.attachment_bytes)}</b>${c.oldest ? ` · seit ${esc(new Date(c.oldest * 1000).toLocaleDateString("de-DE"))}` : ""}</span>
+              <span class="snip">${c.messages === 1 ? T("1 Nachricht") : T("{n} Nachrichten", { n: c.messages })} · ${c.attachments === 1 ? T("1 Anhang") : T("{n} Anhänge", { n: c.attachments })} · <b style="font-weight:500;color:var(--hc-text)">${fmtBytes(c.attachment_bytes)}</b>${c.oldest ? ` · ${T("seit {date}", { date: esc(new Date(c.oldest * 1000).toLocaleDateString(I18N.locale)) })}` : ""}</span>
               ${c.kind !== "home" ? `<span class="snip">${esc(c.member_names.join(", "))}</span>` : ""}
               <span class="acts">
-                ${c.attachments ? `<button class="chipb" data-act="purge_media" data-id="${c.id}">Medien löschen</button>` : ""}
-                ${c.messages ? `<button class="chipb danger" data-act="clear_messages" data-id="${c.id}">Leeren</button>` : ""}
-                ${c.kind !== "home" ? `<button class="chipb danger" data-act="delete_conversation" data-id="${c.id}">Chat löschen</button>` : ""}
+                ${c.attachments ? `<button class="chipb" data-act="purge_media" data-id="${c.id}">${T("Medien löschen")}</button>` : ""}
+                ${c.messages ? `<button class="chipb danger" data-act="clear_messages" data-id="${c.id}">${T("Leeren")}</button>` : ""}
+                ${c.kind !== "home" ? `<button class="chipb danger" data-act="delete_conversation" data-id="${c.id}">${T("Chat löschen")}</button>` : ""}
               </span></span></div>`).join("");
         res.innerHTML = html;
       };
       const drawDevices = (list) => {
         res.innerHTML = list.map((u) => `<div class="crow">${avatar(u.name, null, u.user_id, 40)}<span class="txt"><span class="name">${esc(u.name)}</span>
             ${u.devices.length ? u.devices.map((d) => `<span class="dev">${icon("phone", 16)}<span>${esc(d.name)}${d.os ? ` (${esc(d.os)})` : ""}</span>
-              ${d.service ? `<span class="ok">· Push bereit</span>` : `<span class="bad">· ${d.push ? "Dienst fehlt – Home Assistant neu starten" : "Push nicht eingerichtet"}</span>`}
-              ${d.sent_today ? `<span class="time">· heute ${d.sent_today} Chat-${d.sent_today === 1 ? "Push" : "Pushs"}</span>` : ""}</span>`).join("")
-              : `<span class="dev bad">Kein Smartphone mit der Companion App – bekommt keine Push-Nachrichten</span>`}</span></div>`).join("")
-          + `<div class="sec">Die kostenlose Push-Zustellung von Home Assistant erlaubt 500 Benachrichtigungen pro Gerät und Tag – für alle Automationen zusammen. Kurz hintereinander geschriebene Nachrichten fasst HA Chat zu einer Push zusammen. Ab 350 Chat-Pushs an einem Tag wird gedrosselt (höchstens eine je Chat alle 10 Minuten, Nachrichten mit höchster Priorität ausgenommen), damit z. B. Alarm-Meldungen nicht ausfallen.</div>
-          <div class="sec">Jeder kann seine Erreichbarkeit unter Profil → „Erreichbarkeit testen“ selbst prüfen.</div>`;
+              ${d.service ? `<span class="ok">· ${T("Push bereit")}</span>` : `<span class="bad">· ${d.push ? T("Dienst fehlt – Home Assistant neu starten") : T("Push nicht eingerichtet")}</span>`}
+              ${d.sent_today ? `<span class="time">· ${d.sent_today === 1 ? T("heute 1 Chat-Push") : T("heute {n} Chat-Pushs", { n: d.sent_today })}</span>` : ""}</span>`).join("")
+              : `<span class="dev bad">${T("Kein Smartphone mit der Companion App – bekommt keine Push-Nachrichten")}</span>`}</span></div>`).join("")
+          + `<div class="sec">${T("Die kostenlose Push-Zustellung von Home Assistant erlaubt 500 Benachrichtigungen pro Gerät und Tag – für alle Automationen zusammen. Kurz hintereinander geschriebene Nachrichten fasst HA Chat zu einer Push zusammen. Ab 350 Chat-Pushs an einem Tag wird gedrosselt (höchstens eine je Chat alle 10 Minuten, Nachrichten mit höchster Priorität ausgenommen), damit z. B. Alarm-Meldungen nicht ausfallen.")}</div>
+          <div class="sec">${T("Jeder kann seine Erreichbarkeit unter Profil → „Erreichbarkeit testen“ selbst prüfen.")}</div>`;
       };
       const load = async () => {
-        res.innerHTML = `<div class="note">Lade …</div>`;
+        res.innerHTML = `<div class="note">${T("Lade …")}</div>`;
         sp.querySelectorAll("[data-tab]").forEach((b) => b.classList.toggle("on", b.dataset.tab === tab));
         try {
           if (tab === "storage") { data = await this._client.ws({ type: "ha_chat/storage" }); drawStorage(); }
           else drawDevices(await this._client.ws({ type: "ha_chat/devices" }));
         } catch (e) {
-          res.innerHTML = `<div class="note">${esc(e?.message || "Laden fehlgeschlagen")}</div>`;
+          res.innerHTML = `<div class="note">${esc(e?.message || T("Laden fehlgeschlagen"))}</div>`;
         }
       };
       const QUESTIONS = {
-        purge_media: (c) => [`Alle Bilder, Videos und Dateien in „${c.name}“ löschen?`, "Für alle Mitglieder. Textnachrichten bleiben erhalten. Das lässt sich nicht rückgängig machen.", "Medien löschen"],
-        clear_messages: (c) => [`Alle Nachrichten in „${c.name}“ löschen?`, "Für alle Mitglieder, mitsamt Anhängen. Der Chat selbst bleibt bestehen.", "Leeren"],
-        delete_conversation: (c) => [`Chat „${c.name}“ komplett löschen?`, "Für alle Mitglieder, mit allen Nachrichten und Dateien.", "Löschen"],
-        older_than: (_c, days) => [`Alle Nachrichten löschen, die älter als ${days} Tage sind?`, "In allen Chats und für alle Benutzer, mitsamt Anhängen.", "Löschen"],
-        orphans: () => ["Verwaiste Dateien entfernen?", "Diese Dateien gehören zu keiner Nachricht mehr (z. B. abgebrochene Uploads).", "Entfernen"],
+        purge_media: (c) => [T("Alle Bilder, Videos und Dateien in „{name}“ löschen?", { name: c.name }), T("Für alle Mitglieder. Textnachrichten bleiben erhalten. Das lässt sich nicht rückgängig machen."), T("Medien löschen")],
+        clear_messages: (c) => [T("Alle Nachrichten in „{name}“ löschen?", { name: c.name }), T("Für alle Mitglieder, mitsamt Anhängen. Der Chat selbst bleibt bestehen."), T("Leeren")],
+        delete_conversation: (c) => [T("Chat „{name}“ komplett löschen?", { name: c.name }), T("Für alle Mitglieder, mit allen Nachrichten und Dateien."), T("Löschen")],
+        older_than: (_c, days) => [T("Alle Nachrichten löschen, die älter als {n} Tage sind?", { n: days }), T("In allen Chats und für alle Benutzer, mitsamt Anhängen."), T("Löschen")],
+        orphans: () => [T("Verwaiste Dateien entfernen?"), T("Diese Dateien gehören zu keiner Nachricht mehr (z. B. abgebrochene Uploads)."), T("Entfernen")],
       };
       sp.addEventListener("click", async (e) => {
         const tb = e.target.closest("[data-tab]");
@@ -2076,9 +2473,9 @@
           drawStorage();
           const d = data.done;
           const parts = [];
-          if (d.messages) parts.push(`${d.messages} ${d.messages === 1 ? "Nachricht" : "Nachrichten"}`);
-          if (d.files) parts.push(`${d.files} ${d.files === 1 ? "Datei" : "Dateien"}`);
-          this._toast(parts.length ? `Erledigt – ${parts.join(" und ")} entfernt` : "Erledigt");
+          if (d.messages) parts.push(d.messages === 1 ? T("1 Nachricht") : T("{n} Nachrichten", { n: d.messages }));
+          if (d.files) parts.push(d.files === 1 ? T("1 Datei") : T("{n} Dateien", { n: d.files }));
+          this._toast(parts.length ? T("Erledigt – {what} entfernt", { what: parts.join(T(" und ")) }) : T("Erledigt"));
         } catch (err) {
           btn.disabled = false;
           this._error(err);
@@ -2111,7 +2508,7 @@
         };
         img.onerror = () => {
           URL.revokeObjectURL(url);
-          reject(new Error("Dieses Bildformat kann hier nicht gelesen werden. Bitte ein JPEG- oder PNG-Bild wählen."));
+          reject(new Error(T("Dieses Bildformat kann hier nicht gelesen werden. Bitte ein JPEG- oder PNG-Bild wählen.")));
         };
         img.src = url;
       });
@@ -2119,8 +2516,8 @@
 
     _viewer(src) {
       this.$layer.innerHTML = `<div class="viewer" role="dialog" aria-modal="true"><div class="vb">
-        <a class="ib" href="${esc(src)}" download target="_blank" rel="noopener" aria-label="Herunterladen">${icon("file")}</a>
-        <button class="ib" data-a="close" aria-label="Schließen">${icon("close")}</button></div><img src="${esc(src)}" alt="Bild"></div>`;
+        <a class="ib" href="${esc(src)}" download target="_blank" rel="noopener" aria-label="${T("Herunterladen")}">${icon("file")}</a>
+        <button class="ib" data-a="close" aria-label="${T("Schließen")}">${icon("close")}</button></div><img src="${esc(src)}" alt="${T("Bild")}"></div>`;
       this.$layer.querySelector('.viewer [data-a="close"]').focus();
     }
 
@@ -2134,10 +2531,10 @@
       }
       let html = "";
       if (this._mode) {
-        const label = this._mode.type === "edit" ? "Nachricht bearbeiten" : m.sender_name;
+        const label = this._mode.type === "edit" ? T("Nachricht bearbeiten") : m.sender_name;
         html = `<div class="q"><b>${esc(label)}</b><span>${esc(m.text || preview(m))}</span></div>`;
       }
-      this.$reply.innerHTML = `${html}<button class="ib" data-a="cancel-mode" aria-label="Abbrechen">${icon("close", 18)}</button>`;
+      this.$reply.innerHTML = `${html}<button class="ib" data-a="cancel-mode" aria-label="${T("Abbrechen")}">${icon("close", 18)}</button>`;
       this.$reply.hidden = false;
       this.$reply.style.display = "";
     }
@@ -2218,19 +2615,19 @@
       if (!this.$prio) return;
       this.$prio.hidden = !on;
       this.$prio.innerHTML = on
-        ? `${icon("alert")}<span><b>Höchste Priorität</b><small>Kommt bei den Empfängern auch durch „Nicht stören“ bzw. den Fokus-Modus (wenn erlaubt). Gilt für die nächste Nachricht.</small></span><button class="ib" data-a="prio-off" aria-label="Höchste Priorität ausschalten">${icon("close", 18)}</button>`
+        ? `${icon("alert")}<span><b>${T("Höchste Priorität")}</b><small>${T("Kommt bei den Empfängern auch durch „Nicht stören“ bzw. den Fokus-Modus (wenn erlaubt). Gilt für die nächste Nachricht.")}</small></span><button class="ib" data-a="prio-off" aria-label="${T("Höchste Priorität ausschalten")}">${icon("close", 18)}</button>`
         : "";
       this.$primary?.classList.toggle("imp", !!on);
-      this.$primary?.setAttribute("aria-label", on ? "Mit höchster Priorität senden" : "Senden");
-      if (this.$ta) this.$ta.placeholder = on ? "Wichtige Nachricht schreiben" : "Nachricht schreiben";
+      this.$primary?.setAttribute("aria-label", on ? T("Mit höchster Priorität senden") : T("Senden"));
+      if (this.$ta) this.$ta.placeholder = on ? T("Wichtige Nachricht schreiben") : T("Nachricht schreiben");
     }
 
     // --------------------------------------------------------- Ablage (Fotos, Videos, Dateien)
     _stageFiles(files) {
       if (!this._openId || !files.length) return;
       for (const f of files) {
-        if (this._staged.length >= 10) { this._toast("Höchstens 10 Dateien auf einmal"); break; }
-        if (f.size > 100 * 1024 * 1024) { this._error(new Error(`${f.name}: zu groß (max. 100 MB)`)); continue; }
+        if (this._staged.length >= 10) { this._toast(T("Höchstens 10 Dateien auf einmal")); break; }
+        if (f.size > 100 * 1024 * 1024) { this._error(new Error(`${f.name}: ${T("zu groß (max. 100 MB)")}`)); continue; }
         const kind = f.type.startsWith("image/") ? "image" : f.type.startsWith("video/") ? "video" : "file";
         this._staged.push({ file: f, kind, url: kind === "file" ? null : URL.createObjectURL(f) });
       }
@@ -2260,13 +2657,13 @@
       const hasImg = this._staged.some((s) => s.kind === "image");
       this.$tray.hidden = false;
       this.$tray.innerHTML = `<div class="thumbs">${this._staged.map((s, i) => `<div class="th">
-          <span class="pv">${s.kind === "image" ? `<img src="${esc(s.url)}" alt="" onerror="this.replaceWith(document.createTextNode('Bild'))">` : s.kind === "video" ? `<video src="${esc(s.url)}" muted playsinline preload="metadata"></video>` : icon("file", 28)}</span>
-          <span class="nm" title="${esc(s.file.name || "Datei")}">${esc(s.file.name || "Datei")}</span>
+          <span class="pv">${s.kind === "image" ? `<img src="${esc(s.url)}" alt="" onerror="this.replaceWith(document.createTextNode('${T("Bild")}'))">` : s.kind === "video" ? `<video src="${esc(s.url)}" muted playsinline preload="metadata"></video>` : icon("file", 28)}</span>
+          <span class="nm" title="${esc(s.file.name || T("Datei"))}">${esc(s.file.name || T("Datei"))}</span>
           <span class="nm">${fmtSize(s.file.size)}</span>
-          ${this._sending ? "" : `<button class="x" data-a="unstage" data-i="${i}" aria-label="${esc(s.file.name)} entfernen">${icon("close", 14)}</button>`}
+          ${this._sending ? "" : `<button class="x" data-a="unstage" data-i="${i}" aria-label="${esc(T("{name} entfernen", { name: s.file.name }))}">${icon("close", 14)}</button>`}
         </div>`).join("")}</div>
-        <div class="trow">${hasImg ? `<label><input type="checkbox" class="origchk" ${this._original ? "checked" : ""} ${this._sending ? "disabled" : ""}>Originalqualität (nicht verkleinern)</label>` : ""}
-          <span style="flex:1"></span><span>${esc(status || (this._staged.length > 1 ? `${this._staged.length} Dateien – der Text wird mit der ersten gesendet` : "Optional: Text dazu schreiben"))}</span></div>`;
+        <div class="trow">${hasImg ? `<label><input type="checkbox" class="origchk" ${this._original ? "checked" : ""} ${this._sending ? "disabled" : ""}>${T("Originalqualität (nicht verkleinern)")}</label>` : ""}
+          <span style="flex:1"></span><span>${esc(status || (this._staged.length > 1 ? T("{n} Dateien – der Text wird mit der ersten gesendet", { n: this._staged.length }) : T("Optional: Text dazu schreiben")))}</span></div>`;
     }
 
     async _sendStaged(conv, text) {
@@ -2282,7 +2679,7 @@
         while (this._staged.length) {
           const it = this._staged[0];
           const total = this._staged.length;
-          this._renderTray(`Sende … (noch ${total})`);
+          this._renderTray(T("Sende … (noch {n})", { n: total }));
           const file = it.kind === "image" && !this._original ? await shrinkImage(it.file) : it.file;
           const att = await this._client.upload(conv, file);
           const msg = { type: "ha_chat/send", conversation_id: conv, text: sentText ? "" : text, attachment_id: att.id };
@@ -2306,13 +2703,13 @@
     _attachMenu() {
       if (!this._openId) return;
       this._dialog(
-        `<h3>Anhängen</h3>
-         <button class="act" data-x="cam">${icon("camera")}Foto aufnehmen</button>
-         <button class="act" data-x="gal">${icon("image")}Fotos & Videos aus der Galerie</button>
-         <button class="act" data-x="file">${icon("file")}Datei</button>
-         <button class="act" data-x="loc">${icon("pin")}Standort senden</button>
-         <button class="act ${this._important ? "on" : ""}" data-x="prio">${icon("alert")}<span>${this._important ? "Höchste Priorität ausschalten" : "Mit höchster Priorität senden"}<small>Für Dringendes: kommt auch bei „Nicht stören“ an</small></span></button>
-         <div class="btns"><button class="btn" data-a="close">Abbrechen</button></div>`,
+        `<h3>${T("Anhängen")}</h3>
+         <button class="act" data-x="cam">${icon("camera")}${T("Foto aufnehmen")}</button>
+         <button class="act" data-x="gal">${icon("image")}${T("Fotos & Videos aus der Galerie")}</button>
+         <button class="act" data-x="file">${icon("file")}${T("Datei")}</button>
+         <button class="act" data-x="loc">${icon("pin")}${T("Standort senden")}</button>
+         <button class="act ${this._important ? "on" : ""}" data-x="prio">${icon("alert")}<span>${this._important ? T("Höchste Priorität ausschalten") : T("Mit höchster Priorität senden")}<small>${T("Für Dringendes: kommt auch bei „Nicht stören“ an")}</small></span></button>
+         <div class="btns"><button class="btn" data-a="close">${T("Abbrechen")}</button></div>`,
         (dlg) => dlg.addEventListener("click", (e) => {
           const x = e.target.closest("[data-x]")?.dataset.x;
           if (!x) return;
@@ -2339,8 +2736,8 @@
     _toggleEmoji() {
       if (!this.$emo.hidden) { this.$emo.hidden = true; return; }
       const recent = this._recentEmojis();
-      const groups = recent.length ? { "Zuletzt verwendet": recent.join(" "), ...EMOJIS } : EMOJIS;
-      this.$emo.innerHTML = Object.entries(groups).map(([t, list]) => `<h4>${esc(t)}</h4><div class="g">${list.split(" ").filter(Boolean).map((e) => `<button data-a="emo" data-e="${esc(e)}" aria-label="${esc(e)}">${esc(e)}</button>`).join("")}</div>`).join("");
+      const groups = recent.length ? { "Zuletzt verwendet": recent.join(" "), ...EMOJIS } : EMOJIS; // Überschriften werden unten übersetzt
+      this.$emo.innerHTML = Object.entries(groups).map(([t, list]) => `<h4>${esc(T(t))}</h4><div class="g">${list.split(" ").filter(Boolean).map((e) => `<button data-a="emo" data-e="${esc(e)}" aria-label="${esc(e)}">${esc(e)}</button>`).join("")}</div>`).join("");
       this.$mlist.hidden = true;
       this.$emo.hidden = false;
     }
@@ -2395,23 +2792,23 @@
     _forwardDialog(m) {
       const convs = this._client.sortedConversations();
       this._dialog(
-        `<h3>Weiterleiten an …</h3>
+        `<h3>${T("Weiterleiten an …")}</h3>
          <div>${convs.map((c) => `<label class="chk"><input type="checkbox" value="${c.id}">${avatar(c.name, c.picture, "c" + c.id, 36, c.is_system)}<span>${esc(c.name)}</span></label>`).join("")}</div>
-         <div class="btns"><button class="btn" data-a="close">Abbrechen</button><button class="btn p" data-ok disabled>Weiterleiten</button></div>`,
+         <div class="btns"><button class="btn" data-a="close">${T("Abbrechen")}</button><button class="btn p" data-ok disabled>${T("Weiterleiten")}</button></div>`,
         (dlg) => {
           const ok = dlg.querySelector("[data-ok]");
           const sel = () => [...dlg.querySelectorAll("input:checked")].map((i) => Number(i.value));
           dlg.addEventListener("change", () => {
             const n = sel().length;
             ok.disabled = n === 0 || n > 10;
-            ok.textContent = n > 10 ? "Höchstens 10 Chats" : "Weiterleiten";
+            ok.textContent = n > 10 ? T("Höchstens 10 Chats") : T("Weiterleiten");
           });
           ok.addEventListener("click", async () => {
             const ids = sel();
             this._closeLayer();
             try {
               const r = await this._ws({ type: "ha_chat/forward", message_id: m.id, conversation_ids: ids });
-              this._toast(r.count === 1 ? "Weitergeleitet" : `An ${r.count} Chats weitergeleitet`);
+              this._toast(r.count === 1 ? T("Weitergeleitet") : T("An {n} Chats weitergeleitet", { n: r.count }));
             } catch (e) { /* Fehler wird angezeigt */ }
           });
         }
@@ -2427,12 +2824,12 @@
       const unread = list.filter((x) => x.read_at === null);
       const row = (x, right) => `<div class="row" style="min-height:44px">${avatar(x.name, pic(x.user_id), x.user_id, 32)}<span style="flex:1">${esc(x.name)}</span><span class="time">${esc(right)}</span></div>`;
       this._dialog(
-        `<h3>Nachrichteninfo</h3>
-         <div style="font-size:13px;color:var(--hc-sub)">Gesendet ${esc(fmtDateTime(m.created_at))}</div>
-         <b style="font-weight:500">Gelesen (${read.length})</b>
-         ${read.map((x) => row(x, x.read_at ? fmtDateTime(x.read_at) : "gelesen")).join("") || `<div class="time">Noch von niemandem</div>`}
-         ${unread.length ? `<b style="font-weight:500">Noch nicht gelesen (${unread.length})</b>${unread.map((x) => row(x, "")).join("")}` : ""}
-         <div class="btns"><button class="btn" data-a="close">Schließen</button></div>`
+        `<h3>${T("Nachrichteninfo")}</h3>
+         <div style="font-size:13px;color:var(--hc-sub)">${T("Gesendet")} ${esc(fmtDateTime(m.created_at))}</div>
+         <b style="font-weight:500">${T("Gelesen ({n})", { n: read.length })}</b>
+         ${read.map((x) => row(x, x.read_at ? fmtDateTime(x.read_at) : T("gelesen"))).join("") || `<div class="time">${T("Noch von niemandem")}</div>`}
+         ${unread.length ? `<b style="font-weight:500">${T("Noch nicht gelesen ({n})", { n: unread.length })}</b>${unread.map((x) => row(x, "")).join("")}` : ""}
+         <div class="btns"><button class="btn" data-a="close">${T("Schließen")}</button></div>`
       );
     }
 
@@ -2440,10 +2837,10 @@
     _mediaPanel(convId) {
       const c = this._client.convs.get(convId);
       if (!c) return;
-      this.$layer.innerHTML = `<div class="sp" role="dialog" aria-modal="true" aria-label="Medien, Dateien und Links">
-        <div class="bar2"><button class="ib" data-a="close" aria-label="Schließen">${icon("back")}</button>
-          <span class="ctitle"><span class="n">${esc(c.name)}</span><span class="s">Medien, Dateien & Links</span></span></div>
-        <div class="scope"><button class="chipb on" data-kind="media">Medien</button><button class="chipb" data-kind="files">Dateien</button><button class="chipb" data-kind="links">Links</button></div>
+      this.$layer.innerHTML = `<div class="sp" role="dialog" aria-modal="true" aria-label="${T("Medien, Dateien & Links")}">
+        <div class="bar2"><button class="ib" data-a="close" aria-label="${T("Schließen")}">${icon("back")}</button>
+          <span class="ctitle"><span class="n">${esc(c.name)}</span><span class="s">${T("Medien, Dateien & Links")}</span></span></div>
+        <div class="scope"><button class="chipb on" data-kind="media">${T("Medien")}</button><button class="chipb" data-kind="files">${T("Dateien")}</button><button class="chipb" data-kind="links">${T("Links")}</button></div>
         <div class="res"></div></div>`;
       const sp = this.$layer.firstElementChild;
       const res = sp.querySelector(".res");
@@ -2452,23 +2849,23 @@
       let kind = "media", items = [], done = false, loading = false;
       const draw = () => {
         if (!items.length) {
-          res.innerHTML = `<div class="note">${loading ? "Lade …" : { media: "Noch keine Fotos oder Videos", files: "Noch keine Dateien", links: "Noch keine Links" }[kind]}</div>`;
+          res.innerHTML = `<div class="note">${loading ? T("Lade …") : T({ media: "Noch keine Fotos oder Videos", files: "Noch keine Dateien", links: "Noch keine Links" }[kind])}</div>`;
           return;
         }
         let html;
         if (kind === "media") {
           html = `<div class="grid">${items.map((m) => m.attachment.mime.startsWith("image/") && mediaKind(m.attachment.mime) === "image"
             ? `<button data-src="${esc(m.attachment.url)}" aria-label="${esc(m.attachment.filename)}"><img src="${esc(m.attachment.url)}" alt="" loading="lazy"></button>`
-            : `<button data-jump="${m.id}" aria-label="Video ${esc(m.attachment.filename)}">${icon("play", 32)}</button>`).join("")}</div>`;
+            : `<button data-jump="${m.id}" aria-label="${T("Video")} ${esc(m.attachment.filename)}">${icon("play", 32)}</button>`).join("")}</div>`;
         } else if (kind === "files") {
           html = items.map((m) => `<button class="hit" data-jump="${m.id}">${icon("file", 28)}<span class="txt"><span class="row"><span class="name">${esc(m.attachment.filename)}</span><span class="time">${esc(fmtDateTime(m.created_at))}</span></span><span class="snip">${esc(m.sender_name)} · ${fmtSize(m.attachment.size)}</span></span></button>`).join("");
         } else {
           html = items.map((m) => {
             const url = (m.text.match(/https?:\/\/[^\s<]+/) || [""])[0];
-            return `<div class="hit"><span style="color:var(--hc-acc)">${icon("link", 24)}</span><span class="txt"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="color:var(--hc-acc);word-break:break-all">${esc(url)}</a><span class="snip">${esc(m.sender_name)} · ${esc(fmtDateTime(m.created_at))} · <button class="chipb" data-jump="${m.id}" style="height:26px">Im Chat zeigen</button></span></span></div>`;
+            return `<div class="hit"><span style="color:var(--hc-acc)">${icon("link", 24)}</span><span class="txt"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="color:var(--hc-acc);word-break:break-all">${esc(url)}</a><span class="snip">${esc(m.sender_name)} · ${esc(fmtDateTime(m.created_at))} · <button class="chipb" data-jump="${m.id}" style="height:26px">${T("Im Chat zeigen")}</button></span></span></div>`;
           }).join("");
         }
-        res.innerHTML = html + (done ? "" : `<div class="note"><button class="btn" data-more>Mehr laden</button></div>`);
+        res.innerHTML = html + (done ? "" : `<div class="note"><button class="btn" data-more>${T("Mehr laden")}</button></div>`);
       };
       const load = async () => {
         if (loading || done) return;
@@ -2480,7 +2877,7 @@
           items = items.concat(got);
           done = got.length < 60;
         } catch (e) {
-          res.innerHTML = `<div class="note">${esc(e?.message || "Laden fehlgeschlagen")}</div>`;
+          res.innerHTML = `<div class="note">${esc(e?.message || T("Laden fehlgeschlagen"))}</div>`;
           loading = false;
           return;
         }
@@ -2509,10 +2906,10 @@
       const conv = this._openId;
       if (!conv) return;
       const canGps = window.isSecureContext && !!navigator.geolocation;
-      const st = { gps: null, gpsMsg: canGps ? "wird ermittelt …" : "nur über HTTPS möglich", gpsDone: !canGps, app: null, appMsg: "Standort wird bei der Companion App angefragt …", appDone: false, started: Date.now() / 1000 };
+      const st = { gps: null, gpsMsg: canGps ? T("wird ermittelt …") : T("nur über HTTPS möglich"), gpsDone: !canGps, app: null, appMsg: T("Standort wird bei der Companion App angefragt …"), appDone: false, started: Date.now() / 1000 };
       this._dialog(
-        `<h3>Standort senden</h3><div class="locbox"></div>
-         <div class="btns"><button class="btn" data-a="close">Abbrechen</button><button class="btn p" data-ok disabled>Senden</button></div>`,
+        `<h3>${T("Standort senden")}</h3><div class="locbox"></div>
+         <div class="btns"><button class="btn" data-a="close">${T("Abbrechen")}</button><button class="btn p" data-ok disabled>${T("Senden")}</button></div>`,
         (dlg) => {
           dlg.querySelector("[data-ok]").addEventListener("click", async () => {
             const best = pick();
@@ -2543,40 +2940,40 @@
         if (!box.isConnected) return;
         const best = pick();
         const pending = !st.gpsDone || !st.appDone;
-        const src = (label, msg, fix) => `<div class="locsrc">${icon("pin", 18)}<span><b>${label}:</b> ${fix ? `±${fix.acc ?? "?"} m, Stand vor ${fmtAge(Date.now() / 1000 - fix.ts)}` : esc(msg)}</span></div>`;
-        let html = src("GPS dieses Geräts", st.gpsMsg, st.gps) + src("Companion App", st.appMsg, st.app);
+        const src = (label, msg, fix) => `<div class="locsrc">${icon("pin", 18)}<span><b>${label}:</b> ${fix ? `±${fix.acc ?? "?"} m, ${T("Stand vor {age}", { age: fmtAge(Date.now() / 1000 - fix.ts) })}` : esc(msg)}</span></div>`;
+        let html = src(T("GPS dieses Geräts"), st.gpsMsg, st.gps) + src("Companion App", st.appMsg, st.app);
         if (best) {
           html += `<div>${mapHtml(best, 300, 150)}</div>`;
-          if (best.old) html += `<div class="warn">Achtung: Ein aktueller Standort war nicht verfügbar. Das ist der <b>letzte bekannte Standort von vor ${fmtAge(Date.now() / 1000 - best.ts)}</b>.</div>`;
-          else if ((best.acc ?? 0) > 500) html += `<div class="warn">Der Standort ist ungenau (±${best.acc} m).</div>`;
-          if (pending) html += `<div class="locsrc">Ein genauerer Standort kann noch kommen …</div>`;
+          if (best.old) html += `<div class="warn">${T("Achtung: Ein aktueller Standort war nicht verfügbar. Das ist der <b>letzte bekannte Standort von vor {age}</b>.", { age: fmtAge(Date.now() / 1000 - best.ts) })}</div>`;
+          else if ((best.acc ?? 0) > 500) html += `<div class="warn">${T("Der Standort ist ungenau (±{acc} m).", { acc: best.acc })}</div>`;
+          if (pending) html += `<div class="locsrc">${T("Ein genauerer Standort kann noch kommen …")}</div>`;
         } else if (pending) {
-          html += `<div class="locsrc">Bitte warten, das kann bis zu 25 Sekunden dauern …</div>`;
+          html += `<div class="locsrc">${T("Bitte warten, das kann bis zu 25 Sekunden dauern …")}</div>`;
         } else {
-          html += `<div class="warn"><b>Kein Standort verfügbar.</b> Bitte prüfen:<br>• Ist auf dem Handy die Standortermittlung (GPS) eingeschaltet?<br>• Darf die Companion App den Standort verwenden – auch im Hintergrund? (In der App: Einstellungen → Companion App → Sensoren bzw. Standort)<br>• Ist dein Home-Assistant-Benutzer einer Person mit diesem Handy zugeordnet? (Einstellungen → Personen)</div>`;
+          html += `<div class="warn">${T("<b>Kein Standort verfügbar.</b> Bitte prüfen:<br>• Ist auf dem Handy die Standortermittlung (GPS) eingeschaltet?<br>• Darf die Companion App den Standort verwenden – auch im Hintergrund? (In der App: Einstellungen → Companion App → Sensoren bzw. Standort)<br>• Ist dein Home-Assistant-Benutzer einer Person mit diesem Handy zugeordnet? (Einstellungen → Personen)")}</div>`;
         }
         box.innerHTML = html;
         ok.disabled = !best;
-        ok.textContent = best?.old ? "Trotzdem senden" : "Senden";
+        ok.textContent = best?.old ? T("Trotzdem senden") : T("Senden");
       };
       if (canGps) {
         navigator.geolocation.getCurrentPosition(
           (pos) => { st.gps = { lat: pos.coords.latitude, lon: pos.coords.longitude, acc: Math.round(pos.coords.accuracy), ts: pos.timestamp / 1000, source: "gps" }; st.gpsDone = true; render(); },
-          (err) => { st.gpsMsg = err.code === 1 ? "Zugriff verweigert" : "nicht verfügbar"; st.gpsDone = true; render(); },
+          (err) => { st.gpsMsg = err.code === 1 ? T("Zugriff verweigert") : T("nicht verfügbar"); st.gpsDone = true; render(); },
           { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
         );
       }
       this._client.ws({ type: "ha_chat/locate", refresh: true }).then((r) => {
-        if (r.status === "no_person") st.appMsg = "Dein Benutzer ist keiner Person zugeordnet";
-        else if (r.status === "no_tracker") st.appMsg = "keine Standortdaten von der App";
+        if (r.status === "no_person") st.appMsg = T("Dein Benutzer ist keiner Person zugeordnet");
+        else if (r.status === "no_tracker") st.appMsg = T("keine Standortdaten von der App");
         else {
           const f = r.fixes[0];
           const age = r.now - f.ts;
           const fresh = r.fresh && age < 180;
           st.app = { lat: f.lat, lon: f.lon, acc: f.acc != null ? Math.round(f.acc) : null, ts: Date.now() / 1000 - age, source: fresh ? "app" : "app_old", old: !fresh };
-          if (!fresh) st.appMsg = r.requested ? "kein aktueller Standort erhalten" : "App nicht erreichbar";
+          if (!fresh) st.appMsg = r.requested ? T("kein aktueller Standort erhalten") : T("App nicht erreichbar");
         }
-      }).catch((e) => { st.appMsg = e?.message || "Abfrage fehlgeschlagen"; })
+      }).catch((e) => { st.appMsg = e?.message || T("Abfrage fehlgeschlagen"); })
         .finally(() => { st.appDone = true; render(); });
       render();
     }
@@ -2588,12 +2985,37 @@
       return {};
     }
 
+    static getConfigForm() {
+      return {
+        schema: [
+          { name: "language", selector: { select: { mode: "dropdown", options: LANG_OPTIONS() } } },
+          { name: "title", selector: { text: {} } },
+          { name: "messages", default: 3, selector: { number: { min: 1, max: 10, mode: "box" } } },
+          { name: "navigation_path", selector: { text: {} } },
+        ],
+        computeLabel: (s) => FORM_LABELS()[s.name],
+        computeHelper: (s) => FORM_HELPERS()[s.name],
+      };
+    }
+
     setConfig(config) {
       this.config = { messages: 3, ...(config || {}) };
+      this._syncLang(this._hass);
     }
 
     getCardSize() {
       return 6;
+    }
+
+    _syncLang(hass) {
+      setLang(hass, this.config?.language);
+      const prev = this._lang;
+      this._lang = I18N.lang;
+      if (prev && prev !== I18N.lang && this.$w && this._client) {
+        this._sig = null;
+        this._render();
+        if (this._ready) this._client.reportLanguage(I18N.lang);
+      }
     }
 
     getGridOptions() {
@@ -2602,6 +3024,7 @@
 
     set hass(hass) {
       this._hass = hass;
+      this._syncLang(hass);
       if (this._popupCard) this._popupCard.hass = hass;
       if (this.$w) this.$w.classList.toggle("dark", !!hass?.themes?.darkMode);
       if (!this._client) {
@@ -2610,7 +3033,7 @@
         this._client.attach(this._listener);
         this._build();
         this._client.ready.then(() => { this._render(); this._afterReady(); }).catch((e) => {
-          this._fatal = e?.code === "unknown_command" ? "HA Chat ist noch nicht eingerichtet." : e?.message || String(e);
+          this._fatal = e?.code === "unknown_command" ? T("HA Chat ist noch nicht eingerichtet.") : e?.message || String(e);
           this._render();
         });
       } else this._client.hass = hass;
@@ -2619,6 +3042,7 @@
     _afterReady() {
       this._ready = true;
       if (!this.isConnected || !this._client.info?.allowed) return;
+      this._client.reportLanguage(I18N.lang);
       if (!this.config.navigation_path) this._client.reportView("compact");
       this._checkDeepLink();
     }
@@ -2698,7 +3122,7 @@
     _render() {
       if (!this.$w) return;
       if (this._fatal || (this._client.info && !this._client.info.allowed)) {
-        this.$w.innerHTML = `<div class="info">${esc(this._fatal || "Du bist für den Chat nicht freigeschaltet.")}</div>`;
+        this.$w.innerHTML = `<div class="info">${esc(this._fatal || T("Du bist für den Chat nicht freigeschaltet."))}</div>`;
         return;
       }
       if (!this._client.info) return;
@@ -2729,14 +3153,14 @@
       };
       this.$w.innerHTML = `
         <div class="top"><span class="ic">${icon("chat", 22)}${unread ? `<span class="badge">${unread}</span>` : ""}</span>
-          <span class="ttl"><b>${esc(this.config.title || "Chat")}</b><span>${unread ? `${unread} ungelesen · ${esc(unreadNames)}` : "Keine neuen Nachrichten"}</span></span>
-          <button class="obtn" data-a="openall">Öffnen</button></div>
+          <span class="ttl"><b>${esc(this.config.title || T("Chat"))}</b><span>${unread ? `${T("{n} ungelesen", { n: unread })} · ${esc(unreadNames)}` : T("Keine neuen Nachrichten")}</span></span>
+          <button class="obtn" data-a="openall">${T("Öffnen")}</button></div>
         ${fc ? `<div class="box">
-          <button class="cname" data-a="openc" data-id="${fc.id}" aria-label="Chat ${esc(fc.name)} öffnen">${avatar(fc.name, fc.picture, "c" + fc.id, 22, fc.is_system, true)}<span>${esc(fc.name)}</span>${fc.unread ? `<em>${fc.unread} neu</em>` : ""}</button>
-          <div class="lines">${msgs.length ? msgs.map(line).join("") : `<div class="none">Noch keine Nachrichten</div>`}</div>
-          <div class="qr"><input type="text" placeholder="Antwort an ${esc(fc.name)} …" aria-label="Schnell antworten an ${esc(fc.name)}"><button class="ib acc" data-a="qsend" aria-label="Senden">${icon("send", 18)}</button></div>
-        </div>` : `<div class="info">Noch keine Chats.</div>`}
-        <div class="chips">${chips.map((c) => `<button class="chip" data-a="openc" data-id="${c.id}">${avatar(c.name, c.picture, "c" + c.id, 24, c.is_system, true)}<span>${esc(c.name)}</span>${c.unread ? `<b>${c.unread}</b>` : ""}</button>`).join("")}<button class="chip all" data-a="openall">Alle</button></div>`;
+          <button class="cname" data-a="openc" data-id="${fc.id}" aria-label="${esc(T("Chat {name} öffnen", { name: fc.name }))}">${avatar(fc.name, fc.picture, "c" + fc.id, 22, fc.is_system, true)}<span>${esc(fc.name)}</span>${fc.unread ? `<em>${T("{n} neu", { n: fc.unread })}</em>` : ""}</button>
+          <div class="lines">${msgs.length ? msgs.map(line).join("") : `<div class="none">${T("Noch keine Nachrichten")}</div>`}</div>
+          <div class="qr"><input type="text" placeholder="${esc(T("Antwort an {name} …", { name: fc.name }))}" aria-label="${esc(T("Schnell antworten an {name}", { name: fc.name }))}"><button class="ib acc" data-a="qsend" aria-label="${T("Senden")}">${icon("send", 18)}</button></div>
+        </div>` : `<div class="info">${T("Noch keine Chats.")}</div>`}
+        <div class="chips">${chips.map((c) => `<button class="chip" data-a="openc" data-id="${c.id}">${avatar(c.name, c.picture, "c" + c.id, 24, c.is_system, true)}<span>${esc(c.name)}</span>${c.unread ? `<b>${c.unread}</b>` : ""}</button>`).join("")}<button class="chip all" data-a="openall">${T("Alle")}</button></div>`;
       const inp = this.$w.querySelector(".qr input");
       if (inp) {
         inp.value = keepVal;
@@ -2791,13 +3215,13 @@
         document.body.style.overflow = "hidden"; // Dashboard dahinter nicht mitscrollen
       }
       const x = document.createElement("button");
-      x.setAttribute("aria-label", "Chat schließen");
+      x.setAttribute("aria-label", T("Chat schließen"));
       x.innerHTML = icon("close");
       x.style.cssText = "width:44px;height:44px;border-radius:22px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;background:transparent;color:inherit";
       x.addEventListener("click", () => this._closePopup());
       bar.appendChild(x);
       const card = document.createElement("ha-chat-card");
-      card.setConfig({ height: "100%", open_conversation: convId, _popup: true });
+      card.setConfig({ height: "100%", open_conversation: convId, _popup: true, ...(this.config.language ? { language: this.config.language } : {}) });
       card.style.cssText = "flex:1;min-height:0";
       card.hass = this._hass;
       pw.append(bar, card);
@@ -2827,8 +3251,8 @@
   customElements.define("ha-chat-compact-card", HaChatCompactCard);
   window.customCards = window.customCards || [];
   window.customCards.push(
-    { type: "ha-chat-card", name: "HA Chat", description: "Privater Chat für berechtigte Benutzer (WhatsApp-ähnlich).", preview: false },
-    { type: "ha-chat-compact-card", name: "HA Chat – Kompakt", description: "Ungelesene Nachrichten, letzte Nachrichten und Schnellantwort.", preview: false }
+    { type: "ha-chat-card", name: "HA Chat", description: T("Privater Chat für berechtigte Benutzer (WhatsApp-ähnlich)."), preview: false },
+    { type: "ha-chat-compact-card", name: "HA Chat – " + T("Kompakt"), description: T("Ungelesene Nachrichten, letzte Nachrichten und Schnellantwort."), preview: false }
   );
   console.info(`%c HA-CHAT %c ${VERSION} `, "background:#0277bd;color:#fff;padding:2px 4px;border-radius:3px 0 0 3px", "background:#e1f5fe;color:#01579b;padding:2px 4px;border-radius:0 3px 3px 0");
 })();
